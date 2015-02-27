@@ -1,0 +1,24 @@
+{
+  "name": "mocha-junit-reporter",
+  "version": "1.0.0",
+  "description": "A JUnit reporter for mocha.",
+  "main": "index.js",
+  "scripts": {
+    "test": "MOCHA_FILE=./test/mocha.xml mocha test"
+  },
+  "keywords": [
+    "mocha",
+    "junit",
+    "reporter"
+  ],
+  "author": "Michael Allen",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^2.1.0",
+    "chai-xml": "^0.3.0",
+    "mocha": "^2.1.0"
+  },
+  "dependencies": {
+    "xml": "^1.0.0"
+  }
+}
