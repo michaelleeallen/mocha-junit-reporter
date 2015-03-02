@@ -2,7 +2,7 @@
 
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
-var filePath = process.env.MOCHA_FILE || 'mocha.xml';
+var filePath = process.env.MOCHA_FILE || 'test-results.xml';
 var fs = require('fs');
 
 module.exports = MochaJUnitReporter;
