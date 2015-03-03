@@ -16,6 +16,7 @@ module.exports = MochaJUnitReporter;
 function MochaJUnitReporter(runner) {
   // a list of all test cases that have run
   var testcases = [];
+  var testsuites = [];
 
   // get functionality from the Base reporter
   Base.call(this, runner);
@@ -26,6 +27,10 @@ function MochaJUnitReporter(runner) {
       fs.unlinkSync(filePath);
     }
   });
+  
+  runner.on('suite', function(suite){
+    testsuites.push(this.getTestsuiteData(suite));
+  }.bind(this));
 
   runner.on('pass', function(test){
     testcases.push(this.getTestcaseData(test));
@@ -36,10 +41,23 @@ function MochaJUnitReporter(runner) {
   }.bind(this));
 
   runner.on('end', function(){
-    this.writeXmlToDisk(this.getXml(testcases, this.stats));
+    this.writeXmlToDisk(this.getXml(testsuites, testcases, this.stats));
   }.bind(this));
 
 }
+
+MochaJUnitReporter.prototype.getTestsuiteData = function(suite){
+  return {
+    testsuite: [
+      {
+        _attr: {
+          name: suite.title,
+          tests: suite.tests.length
+        }
+      }
+    ]
+  };
+};
 
 /**
  * Produces an xml config for a given test case.
@@ -70,21 +88,19 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err){
  * @param {number} failures - number tests failed
  * @returns {string}
  */
-MochaJUnitReporter.prototype.getXml = function(testcases, stats){
-  var suites = {
-    testsuites: [
-      {
-        testsuite: [{_attr: {
-          name: '',
-          timestamp: stats.start,
-          tests: stats.tests,
-          failures: stats.failures,
-          time: stats.duration
-        }}].concat(testcases)
-      }
-    ]
-  };
-  return xml(suites, { declaration: true });
+MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
+  var suites = testsuites.map(function(suite, i){
+    var _suite = Object.create(suite);
+    var _cases = testcases.slice(i, suite.tests);
+    _suite.testsuite = _suite.testsuite.concat(_cases);
+    _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase){ 
+      return num + (testcase.testcase.length > 1)? 1 : 0;
+    }, 0);
+    _suite.testsuite[0]._attr.timestamp = stats.start;
+    _suite.testsuite[0]._attr.time = stats.duration;
+    return _suite;
+  });
+  return xml({ testsuites: suites }, { declaration: true });
 };
 
 /**

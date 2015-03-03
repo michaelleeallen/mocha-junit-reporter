@@ -22,6 +22,10 @@ describe('mocha-junit-reporter', function(){
     var runner = new Runner();
     var reporter = new Reporter(runner);
     runner.emit('start');
+    runner.emit('suite', {
+      title: 'Foo Bar module',
+      tests: [1,2]
+    });
     runner.emit('pass', {
       fullTitle: function(){ return 'Foo can weez the juice'; },
       title: 'can weez the juice',

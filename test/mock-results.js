@@ -7,7 +7,7 @@ module.exports = function(stats){
         testsuite: [
           {
             _attr: {
-              name: "",
+              name: "Foo Bar module",
               timestamp: stats.start,
               tests: "2",
               failures: "1",
