@@ -29,6 +29,7 @@ function MochaJUnitReporter(runner) {
   });
   
   runner.on('suite', function(suite){
+    if (suite.title === '' || suite.tests.length === 0) return;
     testsuites.push(this.getTestsuiteData(suite));
   }.bind(this));
 
