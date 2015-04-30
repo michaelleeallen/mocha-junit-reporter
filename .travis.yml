@@ -1,7 +1,12 @@
 language: node_js
 node_js:
-  - "0.12"
-  - "0.11"
-  - "0.10"
-after_install:
-  - npm install -g mocha
+- '0.12'
+- '0.11'
+- '0.10'
+deploy:
+  provider: npm
+  email: michael.lee.allen@gmail.com
+  api_key:
+    secure: cA2Lw9pK4sGwGrW4frrEeOHs5uD7+nMAzXkEbZcK3F4fSvoCXhkYNUCHfc9sDhMXnL0SFD6xJdALJ8/aZjXLST2z7QhTibSd1boIfex9dplPYfK0WaKy206ZHsdmPzkVBdpk45SZUMWoB3sCj7UiGjgyCGnaKc/KOYs8YnwH55U=
+  on:
+    tags: true
