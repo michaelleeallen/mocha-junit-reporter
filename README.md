@@ -1,4 +1,5 @@
 #JUnit Reporter for Mocha
+[![Build Status](https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master)](https://travis-ci.org/michaelleeallen/mocha-junit-reporter)
 
 Produces JUnit-style XML test results.
 
