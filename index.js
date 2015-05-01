@@ -71,7 +71,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err){
     testcase: [{
       _attr: {
         name: test.fullTitle(),
-        time: test.duration,
+        time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
         className: test.title
       }
     }]
@@ -97,8 +97,8 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
     _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase){ 
       return num + (testcase.testcase.length > 1)? 1 : 0;
     }, 0);
-    _suite.testsuite[0]._attr.timestamp = stats.start;
-    _suite.testsuite[0]._attr.time = stats.duration;
+    _suite.testsuite[0]._attr.timestamp = ISODateString(stats.start);
+    _suite.testsuite[0]._attr.time =  (typeof stats.duration === 'undefined') ? 0 : stats.duration / 1000;
     return _suite;
   });
   return xml({ testsuites: suites }, { declaration: true });
@@ -112,3 +112,14 @@ MochaJUnitReporter.prototype.writeXmlToDisk = function(xml){
   fs.writeFileSync(filePath, xml, 'utf-8');
   console.log('test results written to', filePath);
 };
+
+
+function ISODateString(d) {
+  function pad(n) { return n<10 ? '0'+n : n }
+  return      d.getUTCFullYear()
+      + '-' + pad(d.getUTCMonth()+1)
+      + '-' + pad(d.getUTCDate())
+      + 'T' + pad(d.getUTCHours())
+      + ':' + pad(d.getUTCMinutes())
+      + ':' + pad(d.getUTCSeconds())
+}
