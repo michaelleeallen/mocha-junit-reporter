@@ -44,7 +44,7 @@ describe('mocha-junit-reporter', function(){
     runner.emit('test end');
     runner.emit('end');
 
-    var output = fs.readFileSync(__dirname+'/test-results.xml', 'utf-8');
+    var output = fs.readFileSync(__dirname+'/mocha.xml', 'utf-8');
     expect(output).xml.to.be.valid();
     expect(output).xml.to.equal(mockXml(runner.stats));
   });
