@@ -22,7 +22,7 @@ $ mocha test --reporter mocha-junit-reporter
 ```
 This will output a results file at `./test-results.xml`.
 You may optionally declare an alternate location for results XML file by setting
-the command line argument `MOCAH_FILE`:
+the command line argument `MOCHA_FILE`:
 
 ```shell
 $ MOCHA_FILE=./path_to_your/file.xml mocha test --reporter mocha-junit-reporter
