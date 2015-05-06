@@ -1,9 +1,16 @@
 'use-strict';
 
-var xml = require('xml');
-var Base = require('mocha').reporters.Base;
-var filePath = process.env.MOCHA_FILE || 'test-results.xml';
-var fs = require('fs');
+var fs      = require('fs');
+var path    = require('path');
+var mkdirp  = require('mkdirp');
+
+var xml     = require('xml');
+var Base    = require('mocha').reporters.Base;
+
+function FILE_PATH() {
+  return path.resolve(process.env.MOCHA_FILE || 'test-results.xml');
+}
+
 
 module.exports = MochaJUnitReporter;
 
@@ -23,11 +30,11 @@ function MochaJUnitReporter(runner) {
 
   // remove old results
   runner.on('start', function() {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (fs.existsSync(FILE_PATH())) {
+      fs.unlinkSync(FILE_PATH());
     }
   });
-  
+
   runner.on('suite', function(suite){
     if (suite.title === '' || suite.tests.length === 0) return;
     testsuites.push(this.getTestsuiteData(suite));
@@ -47,6 +54,11 @@ function MochaJUnitReporter(runner) {
 
 }
 
+/**
+ * Produces an xml node for a test suite
+ * @param  {Object} suite - a test suite
+ * @return {Object}       - an object representing the xml node
+ */
 MochaJUnitReporter.prototype.getTestsuiteData = function(suite){
   return {
     testsuite: [
@@ -94,7 +106,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
     var _suite = Object.create(suite);
     var _cases = testcases.slice(i, suite.tests);
     _suite.testsuite = _suite.testsuite.concat(_cases);
-    _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase){ 
+    _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase){
       return num + (testcase.testcase.length > 1)? 1 : 0;
     }, 0);
     _suite.testsuite[0]._attr.timestamp = stats.start;
@@ -109,6 +121,8 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
  * @param {string} xml - xml string
  */
 MochaJUnitReporter.prototype.writeXmlToDisk = function(xml){
-  fs.writeFileSync(filePath, xml, 'utf-8');
-  console.log('test results written to', filePath);
+  mkdirp.sync(path.dirname(FILE_PATH()));
+
+  fs.writeFileSync(FILE_PATH(), xml, 'utf-8');
+  console.log('test results written to', FILE_PATH());
 };
