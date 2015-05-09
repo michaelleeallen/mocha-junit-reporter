@@ -24,7 +24,7 @@
     "chai": "^2.1.0",
     "chai-xml": "^0.3.0"
   },
-  "dependencies": {,
+  "dependencies": {
     "mocha": "^2.1.0",
     "xml": "^1.0.0"
   }
