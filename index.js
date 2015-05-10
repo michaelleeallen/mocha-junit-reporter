@@ -2,7 +2,6 @@
 
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
-var filePath = process.env.MOCHA_FILE || 'test-results.xml';
 var fs = require('fs');
 
 module.exports = MochaJUnitReporter;
@@ -14,6 +13,8 @@ module.exports = MochaJUnitReporter;
  * @param {EventEmitter} runner - the test runner
  */
 function MochaJUnitReporter(runner) {
+  var filePath = process.env.MOCHA_FILE || 'test-results.xml';
+
   // a list of all test cases that have run
   var testcases = [];
   var testsuites = [];
