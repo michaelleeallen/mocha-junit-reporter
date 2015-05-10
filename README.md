@@ -28,7 +28,7 @@ the command line argument `MOCHA_FILE` or `mochaFile` in `reporterOptions`:
 $ MOCHA_FILE=./path_to_your/file.xml mocha test --reporter mocha-junit-reporter
 ```
 or
-```shell
+```javascript
 var mocha = new Mocha({
     reporter: 'mocha-junit-reporter',
     reporterOptions: {
