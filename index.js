@@ -11,12 +11,12 @@ module.exports = MochaJUnitReporter;
  * JUnit reporter for mocha.js.
  * @module mocha-junit-reporter
  * @param {EventEmitter} runner - the test runner
- * @param {Object} options - reporter options
+ * @param {Object} options - mocha options
  */
 function MochaJUnitReporter(runner, options) {
   var filePath;
-  if (options && options.mochaFile) {
-    filePath = options.mochaFile;
+  if (options && options.reporterOptions && options.reporterOptions.mochaFile) {
+    filePath = options.reporterOptions.mochaFile;
   } else {
     filePath = process.env.MOCHA_FILE || 'test-results.xml';
   }
