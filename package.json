@@ -22,10 +22,10 @@
   "license": "MIT",
   "devDependencies": {
     "chai": "^2.1.0",
-    "chai-xml": "^0.3.0",
-    "mocha": "^2.1.0"
+    "chai-xml": "^0.3.0"
   },
   "dependencies": {
+    "mocha": "^2.1.0",
     "xml": "^1.0.0"
   }
 }
