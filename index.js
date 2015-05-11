@@ -2,7 +2,6 @@
 
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
-var filePath = process.env.MOCHA_FILE || 'test-results.xml';
 var fs = require('fs');
 
 module.exports = MochaJUnitReporter;
@@ -12,8 +11,16 @@ module.exports = MochaJUnitReporter;
  * JUnit reporter for mocha.js.
  * @module mocha-junit-reporter
  * @param {EventEmitter} runner - the test runner
+ * @param {Object} options - mocha options
  */
-function MochaJUnitReporter(runner) {
+function MochaJUnitReporter(runner, options) {
+  var filePath;
+  if (options && options.reporterOptions && options.reporterOptions.mochaFile) {
+    filePath = options.reporterOptions.mochaFile;
+  } else {
+    filePath = process.env.MOCHA_FILE || 'test-results.xml';
+  }
+
   // a list of all test cases that have run
   var testcases = [];
   var testsuites = [];
@@ -42,7 +49,7 @@ function MochaJUnitReporter(runner) {
   }.bind(this));
 
   runner.on('end', function(){
-    this.writeXmlToDisk(this.getXml(testsuites, testcases, this.stats));
+    this.writeXmlToDisk(this.getXml(testsuites, testcases, this.stats), filePath);
   }.bind(this));
 
 }
@@ -107,8 +114,9 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
 /**
  * Writes a JUnit test report XML document.
  * @param {string} xml - xml string
+ * @param {string} filePath - path to output file
  */
-MochaJUnitReporter.prototype.writeXmlToDisk = function(xml){
+MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
   fs.writeFileSync(filePath, xml, 'utf-8');
   console.log('test results written to', filePath);
 };
