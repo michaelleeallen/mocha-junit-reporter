@@ -4,7 +4,8 @@
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
-    "test": "MOCHA_FILE=./test/mocha.xml mocha test"
+    "test": "MOCHA_FILE=./test/mocha.xml mocha test",
+    "tdd": "MOCHA_FILE=./test/mocha.xml mocha test --reporter=min --watch"
   },
   "repository": {
     "type": "git",
