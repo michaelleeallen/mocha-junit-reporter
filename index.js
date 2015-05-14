@@ -1,16 +1,8 @@
 'use-strict';
 
-var fs      = require('fs');
-var path    = require('path');
-var mkdirp  = require('mkdirp');
-
-var xml     = require('xml');
-var Base    = require('mocha').reporters.Base;
-
-function FILE_PATH() {
-  return path.resolve(process.env.MOCHA_FILE || 'test-results.xml');
-}
-
+var xml = require('xml');
+var Base = require('mocha').reporters.Base;
+var fs = require('fs');
 
 module.exports = MochaJUnitReporter;
 
@@ -19,8 +11,16 @@ module.exports = MochaJUnitReporter;
  * JUnit reporter for mocha.js.
  * @module mocha-junit-reporter
  * @param {EventEmitter} runner - the test runner
+ * @param {Object} options - mocha options
  */
-function MochaJUnitReporter(runner) {
+function MochaJUnitReporter(runner, options) {
+  var filePath;
+  if (options && options.reporterOptions && options.reporterOptions.mochaFile) {
+    filePath = options.reporterOptions.mochaFile;
+  } else {
+    filePath = process.env.MOCHA_FILE || 'test-results.xml';
+  }
+
   // a list of all test cases that have run
   var testcases = [];
   var testsuites = [];
@@ -49,7 +49,7 @@ function MochaJUnitReporter(runner) {
   }.bind(this));
 
   runner.on('end', function(){
-    this.writeXmlToDisk(this.getXml(testsuites, testcases, this.stats));
+    this.writeXmlToDisk(this.getXml(testsuites, testcases, this.stats), filePath);
   }.bind(this));
 
 }
@@ -83,7 +83,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err){
     testcase: [{
       _attr: {
         name: test.fullTitle(),
-        time: test.duration,
+        time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
         className: test.title
       }
     }]
@@ -109,8 +109,8 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
     _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase){
       return num + (testcase.testcase.length > 1)? 1 : 0;
     }, 0);
-    _suite.testsuite[0]._attr.timestamp = stats.start;
-    _suite.testsuite[0]._attr.time = stats.duration;
+    _suite.testsuite[0]._attr.timestamp = stats.start.toISOString().slice(0,-5);
+    _suite.testsuite[0]._attr.time =  (typeof stats.duration === 'undefined') ? 0 : stats.duration / 1000;
     return _suite;
   });
   return xml({ testsuites: suites }, { declaration: true });
@@ -119,10 +119,9 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
 /**
  * Writes a JUnit test report XML document.
  * @param {string} xml - xml string
+ * @param {string} filePath - path to output file
  */
-MochaJUnitReporter.prototype.writeXmlToDisk = function(xml){
-  mkdirp.sync(path.dirname(FILE_PATH()));
-
-  fs.writeFileSync(FILE_PATH(), xml, 'utf-8');
-  console.log('test results written to', FILE_PATH());
+MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
+  fs.writeFileSync(filePath, xml, 'utf-8');
+  console.log('test results written to', filePath);
 };

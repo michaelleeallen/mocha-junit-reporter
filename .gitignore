@@ -2,3 +2,4 @@ node_modules
 test/mocha.xml
 test/subdir/
 node-debug*
+.c9/
