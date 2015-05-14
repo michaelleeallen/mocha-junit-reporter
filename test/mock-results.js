@@ -1,6 +1,6 @@
 var xml = require('xml');
 
-module.exports = function(stats){
+module.exports = function(stats) {
   var data = {
     testsuites: [
       {
