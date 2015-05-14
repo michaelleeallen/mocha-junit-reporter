@@ -25,6 +25,7 @@
     "chai-xml": "^0.3.0"
   },
   "dependencies": {
+    "mkdirp": "~0.5.1",
     "mocha": "^2.1.0",
     "xml": "^1.0.0"
   }
