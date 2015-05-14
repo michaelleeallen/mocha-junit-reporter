@@ -32,8 +32,8 @@ function MochaJUnitReporter(runner, options) {
 
   // remove old results
   runner.on('start', function() {
-    if (fs.existsSync(this.FILE_PATH)) {
-      fs.unlinkSync(this.FILE_PATH);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
   });
 
