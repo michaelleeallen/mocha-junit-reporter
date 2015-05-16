@@ -3,6 +3,8 @@
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
 var fs = require('fs');
+var path = require('path');
+var mkdirp = require('mkdirp');
 
 module.exports = MochaJUnitReporter;
 
@@ -34,17 +36,19 @@ function MochaJUnitReporter(runner, options) {
       fs.unlinkSync(filePath);
     }
   });
-  
-  runner.on('suite', function(suite){
-    if (suite.title === '' || suite.tests.length === 0) return;
+
+  runner.on('suite', function(suite) {
+    if (suite.title === '' || suite.tests.length === 0) {
+      return;
+    }
     testsuites.push(this.getTestsuiteData(suite));
   }.bind(this));
 
-  runner.on('pass', function(test){
+  runner.on('pass', function(test) {
     testcases.push(this.getTestcaseData(test));
   }.bind(this));
 
-  runner.on('fail', function(test, err){
+  runner.on('fail', function(test, err) {
     testcases.push(this.getTestcaseData(test, err));
   }.bind(this));
 
@@ -54,7 +58,12 @@ function MochaJUnitReporter(runner, options) {
 
 }
 
-MochaJUnitReporter.prototype.getTestsuiteData = function(suite){
+/**
+ * Produces an xml node for a test suite
+ * @param  {Object} suite - a test suite
+ * @return {Object}       - an object representing the xml node
+ */
+MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
   return {
     testsuite: [
       {
@@ -73,7 +82,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite){
  * @param {object} err - if test failed, the failure object
  * @returns {object}
  */
-MochaJUnitReporter.prototype.getTestcaseData = function(test, err){
+MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var config = {
     testcase: [{
       _attr: {
@@ -96,13 +105,13 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err){
  * @param {number} failures - number tests failed
  * @returns {string}
  */
-MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
-  var suites = testsuites.map(function(suite, i){
+MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
+  var suites = testsuites.map(function(suite, i) {
     var _suite = Object.create(suite);
     var _cases = testcases.slice(i, suite.tests);
     _suite.testsuite = _suite.testsuite.concat(_cases);
-    _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase){ 
-      return num + (testcase.testcase.length > 1)? 1 : 0;
+    _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase) {
+      return num + (testcase.testcase.length > 1) ? 1 : 0;
     }, 0);
     _suite.testsuite[0]._attr.timestamp = stats.start.toISOString().slice(0,-5);
     _suite.testsuite[0]._attr.time =  (typeof stats.duration === 'undefined') ? 0 : stats.duration / 1000;
@@ -117,6 +126,8 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats){
  * @param {string} filePath - path to output file
  */
 MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
+  mkdirp.sync(path.dirname(filePath));
+
   fs.writeFileSync(filePath, xml, 'utf-8');
   console.log('test results written to', filePath);
 };
