@@ -41,5 +41,5 @@ module.exports = function(stats) {
       }
     ]
   };
-  return xml(data, { declaration: true });
+  return xml(data, {declaration: true});
 };

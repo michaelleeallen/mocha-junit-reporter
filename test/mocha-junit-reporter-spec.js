@@ -74,8 +74,8 @@ describe('mocha-junit-reporter', function() {
 
   it('creates valid XML report for invalid message', function() {
     process.env.MOCHA_FILE = './test/subdir/foo/mocha.xml';
-    var reporter = new Reporter(runner),
-      invalidChar = '\u001b';
+    var reporter = new Reporter(runner);
+    var invalidChar = '\u001b';
 
     runner.start();
 
