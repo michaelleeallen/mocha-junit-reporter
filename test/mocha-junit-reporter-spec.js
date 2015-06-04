@@ -71,4 +71,16 @@ describe('mocha-junit-reporter', function() {
     expect(output).xml.to.be.valid();
     expect(output).xml.to.equal(mockXml(runner.stats));
   });
+
+  it('creates valid XML report for invalid message', function() {
+    process.env.MOCHA_FILE = './test/subdir/foo/mocha.xml';
+    var reporter = new Reporter(runner);
+    var invalidChar = '\u001b';
+
+    executeTestRunner();
+
+    var output = fs.readFileSync(__dirname + '/subdir/foo/mocha.xml', 'utf-8');
+    expect(output).xml.to.be.valid();
+    expect(output).xml.to.equal(mockXml(runner.stats));
+  });
 });
