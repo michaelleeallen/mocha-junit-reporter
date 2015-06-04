@@ -16,6 +16,27 @@ describe('mocha-junit-reporter', function() {
   var runner;
   var MOCHA_FILE;
 
+  function executeTestRunner() {
+    runner.start();
+
+    runner.startSuite({
+      title: 'Foo Bar module',
+      tests: [1, 2]
+    });
+    runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
+    runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 1), {
+      message: 'expected garthog to be dead'
+    });
+
+    runner.startSuite({
+      title: 'Another suite!',
+      tests: [1]
+    });
+    runner.pass(new Test('Another suite', 'works', 4));
+
+    runner.end();
+  }
+
   before(function() {
     // cache this
     MOCHA_FILE = process.env.MOCHA_FILE;
@@ -32,18 +53,8 @@ describe('mocha-junit-reporter', function() {
 
   it('can produce a JUnit XML report', function() {
     var reporter = new Reporter(runner);
-    runner.start();
 
-    runner.startSuite({
-      title: 'Foo Bar module',
-      tests: [1, 2]
-    });
-    runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
-    runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 1), {
-      message: 'expected garthog to be dead'
-    });
-
-    runner.end();
+    executeTestRunner();
 
     var output = fs.readFileSync(__dirname + '/mocha.xml', 'utf-8');
     expect(output).xml.to.be.valid();
@@ -54,18 +65,7 @@ describe('mocha-junit-reporter', function() {
     process.env.MOCHA_FILE = './test/subdir/foo/mocha.xml';
     var reporter = new Reporter(runner);
 
-    runner.start();
-
-    runner.startSuite({
-      title: 'Foo Bar module',
-      tests: [1, 2]
-    });
-    runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
-    runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 1), {
-      message: 'expected garthog to be dead'
-    });
-
-    runner.end();
+    executeTestRunner();
 
     var output = fs.readFileSync(__dirname + '/subdir/foo/mocha.xml', 'utf-8');
     expect(output).xml.to.be.valid();
