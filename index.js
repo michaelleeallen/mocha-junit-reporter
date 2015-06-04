@@ -55,7 +55,7 @@ function MochaJUnitReporter(runner, options) {
   }.bind(this));
 
   runner.on('end', function(){
-    this.writeXmlToDisk(this.getXml(testsuites, testcases, this.stats), filePath);
+    this.writeXmlToDisk(this.getXml(testsuites, testcases, runner.stats), filePath);
   }.bind(this));
 
 }
@@ -71,6 +71,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
       {
         _attr: {
           name: suite.title,
+          timestamp: new Date().toISOString().slice(0,-5),
           tests: suite.tests.length
         }
       }
@@ -112,25 +113,45 @@ MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
 
 /**
  * Produces an XML string from the given test data.
- * @param {array} testcases - a list of xml configs
- * @param {number} passes - number of tests passed
- * @param {number} failures - number tests failed
+ * @param {Array.<Object>} testsuites - a list of xml configs
+ * @param {Array.<Object>} testcases - a list of xml configs
+ * @param {Object} stats - mocha statistics from the runner
  * @returns {string}
  */
 MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
-  var suites = testsuites.map(function(suite, i) {
+  var totalSuitesTime = 0;
+  var totalTests = 0;
+
+  var suites = testsuites.map(function(suite) {
     var _suite = Object.create(suite);
-    var _cases = testcases.slice(i, suite.tests);
+    var _suiteAttr = _suite.testsuite[0]._attr;
+    var _cases = testcases.splice(0, _suiteAttr.tests);
+
     _suite.testsuite = _suite.testsuite.concat(_cases);
-    _suite.testsuite[0]._attr.failures = _cases.reduce(function(num, testcase) {
-      return num + (testcase.testcase.length > 1) ? 1 : 0;
+
+    _suiteAttr.failures = _cases.reduce(function(num, testcase) {
+      return num + ((testcase.testcase.length > 1) ? 1 : 0);
     }, 0);
-    _suite.testsuite[0]._attr.timestamp = stats.start.toISOString().slice(0,-5);
-    _suite.testsuite[0]._attr.time =  (typeof stats.duration === 'undefined') ? 0 : stats.duration / 1000;
+    _suiteAttr.time = _cases.reduce(function(suitDuration, testcase) {
+      return suitDuration + testcase.testcase[0]._attr.time;
+    }, 0);
+
+    totalSuitesTime += _suiteAttr.time;
+    totalTests += _suiteAttr.tests;
+
     return _suite;
   });
-  return xml({ 
-    testsuites: suites
+
+  return xml({
+    testsuites: [{
+      _attr: {
+        name: 'Mocha Tests',
+        timestamp: stats.start.toISOString().slice(0,-5),
+        time: totalSuitesTime,
+        tests: totalTests,
+        failures: stats.failures
+      }
+    }].concat(suites)
   }, { declaration: true, indent: '  ' });
 };
 

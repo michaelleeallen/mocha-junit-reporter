@@ -4,6 +4,15 @@ module.exports = function(stats) {
   var data = {
     testsuites: [
       {
+        _attr: {
+          name: "Mocha Tests",
+          tests: "3",
+          failures: "1",
+          timestamp: stats.start.toISOString().substr(0, stats.start.toISOString().indexOf('.')),
+          time: "0.006"
+        }
+      },
+      {
         testsuite: [
           {
             _attr: {
@@ -11,7 +20,7 @@ module.exports = function(stats) {
               timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
               tests: "2",
               failures: "1",
-              time: stats.duration /1000
+              time: "0.002"
             }
           },
           {
@@ -36,6 +45,28 @@ module.exports = function(stats) {
                 failure: "expected garthog to be dead"
               }
             ]
+          }
+        ]
+      },
+      {
+        testsuite: [
+          {
+            _attr: {
+              name: "Another suite!",
+              timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+              tests: "1",
+              failures: "0",
+              time: "0.004"
+            }
+          },
+          {
+            testcase: {
+              _attr: {
+                name: "Another suite",
+                className: "works",
+                time: "0.004"
+              }
+            }
           }
         ]
       }
