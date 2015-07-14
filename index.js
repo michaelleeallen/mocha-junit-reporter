@@ -4,6 +4,7 @@ var xml = require('xml');
 var Base = require('mocha').reporters.Base;
 var fs = require('fs');
 var path = require('path');
+var debug = require('debug')('mocha-junit-reporter');
 var mkdirp = require('mkdirp');
 
 module.exports = MochaJUnitReporter;
@@ -18,12 +19,11 @@ var INVALID_CHARACTERS = ['\u001b'];
  * @param {Object} options - mocha options
  */
 function MochaJUnitReporter(runner, options) {
-  var filePath;
-  if (options && options.reporterOptions && options.reporterOptions.mochaFile) {
-    filePath = options.reporterOptions.mochaFile;
-  } else {
-    filePath = process.env.MOCHA_FILE || 'test-results.xml';
-  }
+  debug(options);
+  options = options || {};
+  options = options.reporterOptions || {};
+  options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
+  options.toConsole = options.toConsole || false;
 
   // a list of all test cases that have run
   var testcases = [];
@@ -34,8 +34,11 @@ function MochaJUnitReporter(runner, options) {
 
   // remove old results
   runner.on('start', function() {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // debug('checking for report file');
+
+    if (fs.existsSync(options.mochaFile)) {
+      debug('removing report file', options.mochaFile);
+      fs.unlinkSync(options.mochaFile);
     }
   });
 
@@ -55,7 +58,7 @@ function MochaJUnitReporter(runner, options) {
   }.bind(this));
 
   runner.on('end', function(){
-    this.writeXmlToDisk(this.getXml(testsuites, testcases, runner.stats), filePath);
+    this.writeXmlToDisk(this.getXml(testsuites, testcases, runner.stats), options);
   }.bind(this));
 
 }
@@ -160,9 +163,18 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
  * @param {string} xml - xml string
  * @param {string} filePath - path to output file
  */
-MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
-  mkdirp.sync(path.dirname(filePath));
+MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, options){
+  var filePath = options.mochaFile;
 
-  fs.writeFileSync(filePath, xml, 'utf-8');
-  console.log('test results written to', filePath);
+  if (filePath) {
+    debug('writing file to', filePath);
+    mkdirp.sync(path.dirname(filePath));
+
+    fs.writeFileSync(filePath, xml, 'utf-8');
+    debug('results written successfully');
+  }
+
+  if (options.toConsole === true) {
+    console.log(xml);
+  }
 };
