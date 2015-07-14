@@ -141,9 +141,9 @@ describe('mocha-junit-reporter', function() {
       executeTestRunner();
       verifyMochaFile(filePath);
     } catch (e) {
-      console.error(e);
+      stdout.restore();
+      throw e;
     }
-    stdout.restore();
 
     var xml = stdout.output[0];
     expect(xml).xml.to.be.valid();

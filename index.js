@@ -34,8 +34,6 @@ function MochaJUnitReporter(runner, options) {
 
   // remove old results
   runner.on('start', function() {
-    // debug('checking for report file');
-
     if (fs.existsSync(options.mochaFile)) {
       debug('removing report file', options.mochaFile);
       fs.unlinkSync(options.mochaFile);
