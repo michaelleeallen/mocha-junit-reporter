@@ -1,11 +1,11 @@
 {
   "name": "mocha-junit-reporter",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
-    "test": "MOCHA_FILE=./test/mocha.xml mocha test",
-    "tdd": "MOCHA_FILE=./test/mocha.xml mocha test --reporter=min --watch"
+    "test": "MOCHA_FILE=test/mocha.xml node_modules/.bin/mocha test --reporter=spec",
+    "tdd": "MOCHA_FILE=test/mocha.xml node_modules/.bin/mocha test --reporter=min --watch"
   },
   "repository": {
     "type": "git",
@@ -22,12 +22,14 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "chai": "^2.1.0",
-    "chai-xml": "^0.3.0"
+    "chai": "^3.0.0",
+    "chai-xml": "^0.3.0",
+    "test-console": "^1.0.0"
   },
   "dependencies": {
+    "debug": "^2.2.0",
     "mkdirp": "~0.5.1",
-    "mocha": "^2.1.0",
+    "mocha": "^2.2.5",
     "xml": "^1.0.0"
   }
 }
