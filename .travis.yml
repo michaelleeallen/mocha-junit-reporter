@@ -6,6 +6,8 @@ deploy:
   provider: npm
   email: michael.lee.allen@gmail.com
   api_key:
-    secure: XO9fm9QAA5rdY8TP1CaFKH6ity4u0KiAy3i1NADBwLCIMzdAwKVdbxZqmlIYDCwvl2ZyOvLtuNGf2iIpmLz2+zFl4ygNRMafLqpjmQK7V9D4Cpo6gl/Z9GGI2583Tdv4AKEkKgkdEVP4m6Qah22CEkfzEo/B8hZpE3NhyJ9zuZ4=
+    secure: YWl4mwTdJp7KI+SsFKR1JD2mBfwzVyCixuB3yOMgc8ELKF9yY766kFU5RaQzQlC4tETuLraNSNRhLMWBfAVERklA5taUgF7swioISO9YjdNumfAlwtbeKKMljV+vWPJ94r5We15Y6WysBaE0YuqG08Hy4KZ58FS+40eKsAaCnQw=
   on:
+    branch: master
     tags: true
+    repo: michaelleeallen/mocha-junit-reporter
