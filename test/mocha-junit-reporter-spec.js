@@ -107,6 +107,15 @@ describe('mocha-junit-reporter', function() {
     verifyMochaFile(filePath);
   });
 
+  it('respects `--reporter-options mochaFile=`', function() {
+    var opts = { mochaFile: 'test/results.xml' };
+    var reporter = new Reporter(runner, { reporterOptions: opts });
+    filePath = __dirname + '/results.xml';
+
+    executeTestRunner();
+    verifyMochaFile(filePath);
+  });
+
   it('will create intermediate directories', function() {
     var reporter = new Reporter(runner, {
       reporterOptions: {mochaFile: 'test/subdir/foo/mocha.xml'}
