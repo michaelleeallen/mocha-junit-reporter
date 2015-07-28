@@ -22,10 +22,14 @@ $ mocha test --reporter mocha-junit-reporter
 ```
 This will output a results file at `./test-results.xml`.
 You may optionally declare an alternate location for results XML file by setting
-the command line argument `MOCHA_FILE` or `mochaFile` in `reporterOptions`:
+the environment variable `MOCHA_FILE` or specifying `mochaFile` in `reporterOptions`:
 
 ```shell
 $ MOCHA_FILE=./path_to_your/file.xml mocha test --reporter mocha-junit-reporter
+```
+or
+```shell
+$ mocha test --reporter mocha-junit-reporter --reporter-options mochaFile=./path_to_your/file.xml
 ```
 or
 ```javascript
