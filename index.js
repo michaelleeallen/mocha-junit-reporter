@@ -147,7 +147,6 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
     testsuites: [{
       _attr: {
         name: 'Mocha Tests',
-        timestamp: stats.start.toISOString().slice(0,-5),
         time: totalSuitesTime,
         tests: totalTests,
         failures: stats.failures

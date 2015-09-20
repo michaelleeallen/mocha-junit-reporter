@@ -8,7 +8,6 @@ module.exports = function(stats) {
           name: "Mocha Tests",
           tests: "3",
           failures: "1",
-          timestamp: stats.start.toISOString().substr(0, stats.start.toISOString().indexOf('.')),
           time: "0.006"
         }
       },
