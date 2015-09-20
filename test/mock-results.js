@@ -27,7 +27,7 @@ module.exports = function(stats) {
             testcase: {
               _attr: {
                 name: "Foo can weez the juice",
-                className: "can weez the juice",
+                classname: "can weez the juice",
                 time: "0.001"
               }
             }
@@ -37,7 +37,7 @@ module.exports = function(stats) {
               {
                 _attr: {
                   name: "Bar can narfle the garthog",
-                  className: "can narfle the garthog",
+                  classname: "can narfle the garthog",
                   time: "0.001"
                 }
               },
@@ -63,7 +63,7 @@ module.exports = function(stats) {
             testcase: {
               _attr: {
                 name: "Another suite",
-                className: "works",
+                classname: "works",
                 time: "0.004"
               }
             }
