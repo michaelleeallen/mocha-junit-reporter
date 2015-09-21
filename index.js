@@ -92,7 +92,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       _attr: {
         name: test.fullTitle(),
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
-        className: test.title
+        classname: test.title
       }
     }]
   };
@@ -147,7 +147,6 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
     testsuites: [{
       _attr: {
         name: 'Mocha Tests',
-        timestamp: stats.start.toISOString().slice(0,-5),
         time: totalSuitesTime,
         tests: totalTests,
         failures: stats.failures
