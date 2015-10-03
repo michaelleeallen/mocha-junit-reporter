@@ -32,7 +32,7 @@ describe('mocha-junit-reporter', function() {
     });
     runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
     runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 1), {
-      message: char + 'expected garthog to be dead' + char
+      stack: char + 'expected garthog to be dead' + char
     });
 
     runner.startSuite({

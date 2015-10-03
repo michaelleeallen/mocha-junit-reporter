@@ -96,8 +96,11 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       }
     }]
   };
-  if ( err ) {
-    config.testcase.push({failure: this.removeInvalidCharacters(err.message)});
+  if (err) {
+    var failureElement = {
+      _cdata: this.removeInvalidCharacters(err.stack)
+    };
+    config.testcase.push({failure: failureElement});
   }
   return config;
 };
