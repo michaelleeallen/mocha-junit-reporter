@@ -22,8 +22,9 @@ describe('mocha-junit-reporter', function() {
   var filePath;
   var MOCHA_FILE;
 
-  function executeTestRunner(char) {
-    char = char || '';
+  function executeTestRunner(options) {
+    options = options || {};
+    options.invalidChar = options.invalidChar || '';
     runner.start();
 
     runner.startSuite({
@@ -32,7 +33,7 @@ describe('mocha-junit-reporter', function() {
     });
     runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
     runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 1), {
-      stack: char + 'expected garthog to be dead' + char
+      stack: options.invalidChar + 'expected garthog to be dead' + options.invalidChar
     });
 
     runner.startSuite({
@@ -40,6 +41,14 @@ describe('mocha-junit-reporter', function() {
       tests: [1]
     });
     runner.pass(new Test('Another suite', 'works', 4));
+
+    if (options.includePending) {
+      runner.startSuite({
+        title: 'Pending suite!',
+        tests: [1]
+      });
+      runner.pending(new Test('Pending suite', 'pending'));
+    }
 
     runner.end();
   }
@@ -55,17 +64,24 @@ describe('mocha-junit-reporter', function() {
   }
 
   function removeTestPath() {
-    if (fs.existsSync(__dirname + '/subdir')) {
-      if (fs.existsSync(__dirname + '/subdir/foo')) {
-        if (fs.existsSync(__dirname + '/subdir/foo/mocha.xml')) {
-          fs.unlinkSync(__dirname + '/subdir/foo/mocha.xml');
-        }
+    var testPath = '/subdir/foo/mocha.xml';
+    var parts = testPath.slice(1).split('/');
 
-        fs.rmdirSync(__dirname + '/subdir/foo');
+    parts.reduce(function(testPath) {
+      if (fs.existsSync(__dirname + testPath)) {
+        var removeFile = testPath.indexOf('.') === -1 ? 'rmdirSync' : 'unlinkSync';
+        fs[removeFile](__dirname + testPath);
       }
 
-      fs.rmdirSync(__dirname + '/subdir');
-    }
+      return path.dirname(testPath);
+    }, testPath);
+  }
+
+  function createReporter(options) {
+    options = options || {};
+    filePath = path.join(path.dirname(__dirname), options.mochaFile || '');
+
+    return new Reporter(runner, { reporterOptions: options });
   }
 
   before(function() {
@@ -86,64 +102,55 @@ describe('mocha-junit-reporter', function() {
 
   afterEach(function() {
     debug('after');
-  })
+  });
 
   it('can produce a JUnit XML report', function() {
-    var reporter = new Reporter(runner, {
-      reporterOptions: {mochaFile: 'test/mocha.xml'}
-    });
-    filePath = __dirname + '/mocha.xml';
-
+    createReporter({mochaFile: 'test/mocha.xml'});
     executeTestRunner();
+
     verifyMochaFile(filePath);
   });
 
   it('respects `process.env.MOCHA_FILE`', function() {
     process.env.MOCHA_FILE = 'test/results.xml';
-    var reporter = new Reporter(runner);
-    filePath = __dirname + '/results.xml';
-
+    createReporter();
     executeTestRunner();
-    verifyMochaFile(filePath);
+
+    verifyMochaFile(process.env.MOCHA_FILE);
   });
 
   it('respects `--reporter-options mochaFile=`', function() {
-    var opts = { mochaFile: 'test/results.xml' };
-    var reporter = new Reporter(runner, { reporterOptions: opts });
-    filePath = __dirname + '/results.xml';
-
+    createReporter({mochaFile: 'test/results.xml'});
     executeTestRunner();
+
     verifyMochaFile(filePath);
   });
 
   it('will create intermediate directories', function() {
-    var reporter = new Reporter(runner, {
-      reporterOptions: {mochaFile: 'test/subdir/foo/mocha.xml'}
-    });
-    filePath = __dirname + '/subdir/foo/mocha.xml';
-
+    createReporter({mochaFile: 'test/subdir/foo/mocha.xml'});
     removeTestPath();
     executeTestRunner();
+
     verifyMochaFile(filePath);
     removeTestPath();
   });
 
   it('creates valid XML report for invalid message', function() {
-    var reporter = new Reporter(runner, {
-      reporterOptions: {mochaFile: 'test/mocha.xml'}
-    });
-    var invalidChar = '\u001b';
-    filePath = __dirname + '/mocha.xml'
+    createReporter({mochaFile: 'test/mocha.xml'});
+    executeTestRunner({invalidChar: '\u001b'});
 
-    executeTestRunner(invalidChar);
+    verifyMochaFile(filePath);
+  });
+
+  it('outputs pending tests if "includePending" is specified', function() {
+    createReporter({mochaFile: 'test/mocha.xml', includePending: true});
+    executeTestRunner({includePending: true});
+
     verifyMochaFile(filePath);
   });
 
   it('can output to the console', function() {
-    var reporter = new Reporter(runner, {
-      reporterOptions: {mochaFile: 'test/console.xml', toConsole: true}
-    });
-    filePath = __dirname + '/console.xml';
+    createReporter({mochaFile: 'test/console.xml', toConsole: true})
 
     var stdout = testConsole.stdout.inspect();
     try {

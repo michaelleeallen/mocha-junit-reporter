@@ -6,7 +6,7 @@ module.exports = function(stats) {
       {
         _attr: {
           name: "Mocha Tests",
-          tests: "3",
+          tests: 3,
           failures: "1",
           time: "0.006"
         }
@@ -71,5 +71,39 @@ module.exports = function(stats) {
       }
     ]
   };
+
+  if (stats.pending) {
+    data.testsuites[0]._attr.tests += stats.pending;
+    data.testsuites[0]._attr.skipped = stats.pending;
+    data.testsuites.push({
+      testsuite: [
+        {
+          _attr: {
+            name: "Pending suite!",
+            timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+            tests: "1",
+            failures: "0",
+            skipped: "1",
+            time: "0"
+          }
+        },
+        {
+          testcase: [
+            {
+              _attr: {
+                name: "Pending suite",
+                classname: "pending",
+                time: "0"
+              }
+            },
+            {
+              skipped: null
+            }
+          ]
+        }
+      ]
+    });
+  }
+
   return xml(data, {declaration: true});
 };

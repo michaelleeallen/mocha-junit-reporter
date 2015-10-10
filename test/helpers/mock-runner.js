@@ -32,6 +32,11 @@ Runner.prototype.fail = function(test, reason) {
   this.endTest();
 };
 
+Runner.prototype.pending = function(test) {
+  this.emit('pending', test);
+  this.endTest();
+};
+
 Runner.prototype.endTest = function() {
   this.emit('end test');
 };
