@@ -55,10 +55,18 @@ function MochaJUnitReporter(runner, options) {
     testcases.push(this.getTestcaseData(test, err));
   }.bind(this));
 
+  if (options.includePending) {
+    runner.on('pending', function(test) {
+      var testcase = this.getTestcaseData(test);
+
+      testcase.testcase.push({ skipped: null });
+      testcases.push(testcase);
+    }.bind(this));
+  }
+
   runner.on('end', function(){
     this.writeXmlToDisk(this.getXml(testsuites, testcases, runner.stats), options);
   }.bind(this));
-
 }
 
 /**
@@ -100,6 +108,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     var failureElement = {
       _cdata: this.removeInvalidCharacters(err.stack)
     };
+
     config.testcase.push({failure: failureElement});
   }
   return config;
@@ -132,13 +141,21 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
     var _cases = testcases.splice(0, _suiteAttr.tests);
 
     _suite.testsuite = _suite.testsuite.concat(_cases);
+    _suiteAttr.failures = 0;
+    _suiteAttr.time = 0;
+    _suiteAttr.skipped = 0;
 
-    _suiteAttr.failures = _cases.reduce(function(num, testcase) {
-      return num + ((testcase.testcase.length > 1) ? 1 : 0);
-    }, 0);
-    _suiteAttr.time = _cases.reduce(function(suitDuration, testcase) {
-      return suitDuration + testcase.testcase[0]._attr.time;
-    }, 0);
+    _cases.forEach(function(testcase) {
+      var lastNodeName = Object.keys(testcase.testcase[testcase.testcase.length - 1])[0];
+
+      _suiteAttr.skipped += lastNodeName === 'skipped' ? 1 : 0;
+      _suiteAttr.failures += lastNodeName === 'failure' ? 1 : 0;
+      _suiteAttr.time += testcase.testcase[0]._attr.time;
+    });
+
+    if (!_suiteAttr.skipped) {
+      delete _suiteAttr.skipped;
+    }
 
     totalSuitesTime += _suiteAttr.time;
     totalTests += _suiteAttr.tests;
@@ -146,15 +163,21 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases, stats) {
     return _suite;
   });
 
+  var parentSuite = {
+    _attr: {
+      name: 'Mocha Tests',
+      time: totalSuitesTime,
+      tests: totalTests,
+      failures: stats.failures
+    }
+  };
+
+  if (stats.pending) {
+    parentSuite._attr.skipped = stats.pending;
+  }
+
   return xml({
-    testsuites: [{
-      _attr: {
-        name: 'Mocha Tests',
-        time: totalSuitesTime,
-        tests: totalTests,
-        failures: stats.failures
-      }
-    }].concat(suites)
+    testsuites: [ parentSuite ].concat(suites)
   }, { declaration: true, indent: '  ' });
 };
 
