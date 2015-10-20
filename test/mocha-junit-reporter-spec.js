@@ -161,8 +161,50 @@ describe('mocha-junit-reporter', function() {
       throw e;
     }
 
+    stdout.restore();
+
     var xml = stdout.output[0];
     expect(xml).xml.to.be.valid();
     expect(xml).xml.to.equal(mockXml(runner.stats));
+  });
+
+  describe('Output', function() {
+    var reporter, testsuites;
+
+    beforeEach(function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml'});
+
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+    });
+
+    it('skips suites with empty title', function() {
+      runner.startSuite({title: '', tests: [1]});
+      runner.end();
+
+      expect(testsuites).to.be.empty;
+    });
+
+    it('skips suites without testcases and suites', function() {
+      runner.startSuite({title: 'test me'});
+      runner.end();
+
+      expect(testsuites).to.be.empty;
+    });
+
+    it('does not skip suites with nested suites', function() {
+      runner.startSuite({title: 'test me', suites: [1]});
+      runner.end();
+
+      expect(testsuites).to.have.length(1);
+    });
+
+    it('does not skip suites with nested tests', function() {
+      runner.startSuite({title: 'test me', tests: [1]});
+      runner.end();
+
+      expect(testsuites).to.have.length(1);
+    });
   });
 });
