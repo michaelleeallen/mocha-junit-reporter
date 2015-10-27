@@ -31,7 +31,11 @@ describe('mocha-junit-reporter', function() {
       title: 'Foo Bar module',
       tests: [1, 2]
     });
-    runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
+
+    if (!options.skipPassedTests) {
+      runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 1));
+    }
+
     runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 1), {
       stack: options.invalidChar + 'expected garthog to be dead' + options.invalidChar
     });
@@ -42,7 +46,7 @@ describe('mocha-junit-reporter', function() {
     });
     runner.pass(new Test('Another suite', 'works', 4));
 
-    if (options.includePending) {
+    if (options && options.includePending) {
       runner.startSuite({
         title: 'Pending suite!',
         tests: [1]
@@ -53,12 +57,12 @@ describe('mocha-junit-reporter', function() {
     runner.end();
   }
 
-  function verifyMochaFile(path) {
+  function verifyMochaFile(path, options) {
     var now = (new Date()).toISOString();
     debug('verify', now);
     var output = fs.readFileSync(path, 'utf-8');
     expect(output).xml.to.be.valid();
-    expect(output).xml.to.equal(mockXml(runner.stats));
+    expect(output).xml.to.equal(mockXml(runner.stats, options));
     fs.unlinkSync(path);
     debug('done', now);
   }
@@ -150,7 +154,7 @@ describe('mocha-junit-reporter', function() {
   });
 
   it('can output to the console', function() {
-    createReporter({mochaFile: 'test/console.xml', toConsole: true})
+    createReporter({mochaFile: 'test/console.xml', toConsole: true});
 
     var stdout = testConsole.stdout.inspect();
     try {
@@ -166,6 +170,14 @@ describe('mocha-junit-reporter', function() {
     var xml = stdout.output[0];
     expect(xml).xml.to.be.valid();
     expect(xml).xml.to.equal(mockXml(runner.stats));
+  });
+
+  it('properly outputs tests when amount of tests is wrong', function() {
+    createReporter({mochaFile: 'test/mocha.xml'});
+    // emulates exception in before each hook
+    executeTestRunner({skipPassedTests: true});
+
+    verifyMochaFile(filePath, {skipPassedTests: true});
   });
 
   describe('Output', function() {
