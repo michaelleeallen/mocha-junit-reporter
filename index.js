@@ -36,9 +36,11 @@ function MochaJUnitReporter(runner, options) {
   this._options = configureDefaults(options);
   this._runner = runner;
 
-  // a list of all test cases that have run
-  var testcases = [];
   var testsuites = [];
+
+  function lastSuite() {
+    return testsuites[testsuites.length - 1].testsuite;
+  }
 
   // get functionality from the Base reporter
   Base.call(this, runner);
@@ -58,11 +60,11 @@ function MochaJUnitReporter(runner, options) {
   }.bind(this));
 
   this._runner.on('pass', function(test) {
-    testcases.push(this.getTestcaseData(test));
+    lastSuite().push(this.getTestcaseData(test));
   }.bind(this));
 
   this._runner.on('fail', function(test, err) {
-    testcases.push(this.getTestcaseData(test, err));
+    lastSuite().push(this.getTestcaseData(test, err));
   }.bind(this));
 
   if (this._options.includePending) {
@@ -70,12 +72,12 @@ function MochaJUnitReporter(runner, options) {
       var testcase = this.getTestcaseData(test);
 
       testcase.testcase.push({ skipped: null });
-      testcases.push(testcase);
+      lastSuite().push(testcase);
     }.bind(this));
   }
 
   this._runner.on('end', function(){
-    this.flush(testsuites, testcases)
+    this.flush(testsuites);
   }.bind(this));
 }
 
@@ -137,10 +139,9 @@ MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
 /**
  * Writes xml to disk and ouputs content if "toConsole" is set to true.
  * @param {Array.<Object>} testsuites - a list of xml configs
- * @param {Array.<Object>} testcases - a list of xml configs
  */
-MochaJUnitReporter.prototype.flush = function(testsuites, testcases){
-  var xml = this.getXml(testsuites, testcases);
+MochaJUnitReporter.prototype.flush = function(testsuites){
+  var xml = this.getXml(testsuites);
 
   this.writeXmlToDisk(xml, this._options.mochaFile);
 
@@ -153,29 +154,26 @@ MochaJUnitReporter.prototype.flush = function(testsuites, testcases){
 /**
  * Produces an XML string from the given test data.
  * @param {Array.<Object>} testsuites - a list of xml configs
- * @param {Array.<Object>} testcases - a list of xml configs
  * @returns {string}
  */
-MochaJUnitReporter.prototype.getXml = function(testsuites, testcases) {
+MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var totalSuitesTime = 0;
   var totalTests = 0;
   var stats = this._runner.stats;
 
-  var suites = testsuites.map(function(suite) {
-    var _suite = Object.create(suite);
-    var _suiteAttr = _suite.testsuite[0]._attr;
-    var _cases = testcases.splice(0, _suiteAttr.tests);
+  testsuites.forEach(function(suite) {
+    var _suiteAttr = suite.testsuite[0]._attr;
+    var _cases = suite.testsuite.slice(1);
 
-    _suite.testsuite = _suite.testsuite.concat(_cases);
     _suiteAttr.failures = 0;
     _suiteAttr.time = 0;
     _suiteAttr.skipped = 0;
 
     _cases.forEach(function(testcase) {
-      var lastNodeName = Object.keys(testcase.testcase[testcase.testcase.length - 1])[0];
+      var lastNode = testcase.testcase[testcase.testcase.length - 1];
 
-      _suiteAttr.skipped += lastNodeName === 'skipped' ? 1 : 0;
-      _suiteAttr.failures += lastNodeName === 'failure' ? 1 : 0;
+      _suiteAttr.skipped += Number('skipped' in lastNode);
+      _suiteAttr.failures += Number('failure' in lastNode);
       _suiteAttr.time += testcase.testcase[0]._attr.time;
     });
 
@@ -185,11 +183,9 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases) {
 
     totalSuitesTime += _suiteAttr.time;
     totalTests += _suiteAttr.tests;
-
-    return _suite;
   });
 
-  var parentSuite = {
+  var rootSuite = {
     _attr: {
       name: 'Mocha Tests',
       time: totalSuitesTime,
@@ -199,11 +195,11 @@ MochaJUnitReporter.prototype.getXml = function(testsuites, testcases) {
   };
 
   if (stats.pending) {
-    parentSuite._attr.skipped = stats.pending;
+    rootSuite._attr.skipped = stats.pending;
   }
 
   return xml({
-    testsuites: [ parentSuite ].concat(suites)
+    testsuites: [ rootSuite ].concat(testsuites)
   }, { declaration: true, indent: '  ' });
 };
 
