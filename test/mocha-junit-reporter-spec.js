@@ -168,6 +168,42 @@ describe('mocha-junit-reporter', function() {
     expect(xml).xml.to.equal(mockXml(runner.stats));
   });
 
+  describe('when "useFullSuiteTitle" option is specified', function() {
+    var suiteTitles = ['test suite', 'when has parent'];
+
+    it('generates full suite title', function() {
+      var reporter = configureReporter({useFullSuiteTitle: true });
+
+      expect(suiteName(reporter.suites[0])).to.equal(suiteTitles[0]);
+      expect(suiteName(reporter.suites[1])).to.equal(suiteTitles.join(' '));
+    });
+
+    it('generates full suite title separated by "suiteTitleSeparedBy" option', function() {
+      var reporter = configureReporter({useFullSuiteTitle: true, suiteTitleSeparedBy: '.'});
+
+      expect(suiteName(reporter.suites[1])).to.equal(suiteTitles.join('.'));
+    });
+
+    function suiteName(suite) {
+      return suite.testsuite[0]._attr.name;
+    }
+
+    function configureReporter(options) {
+      var reporter = createReporter(options);
+
+      reporter.flush = function(suites) {
+        reporter.suites = suites;
+      };
+
+      suiteTitles.forEach(function(title) {
+        runner.startSuite({title: title, suites: [1], tests: [1]});
+      });
+      runner.end();
+
+      return reporter;
+    }
+  });
+
   describe('Output', function() {
     var reporter, testsuites;
 

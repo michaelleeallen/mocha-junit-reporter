@@ -40,3 +40,13 @@ var mocha = new Mocha({
     }
 });
 ```
+In order to display full suite title (including parents) just specify `useFullSuiteTitle` option
+```javascript
+var mocha = new Mocha({
+    reporter: 'mocha-junit-reporter',
+    reporterOptions: {
+        useFullSuiteTitle: true,
+        suiteTitleSeparedBy: '.' // suites separator, default is space (' ')
+    }
+});
+```
