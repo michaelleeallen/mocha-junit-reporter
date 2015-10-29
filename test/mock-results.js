@@ -1,6 +1,6 @@
 var xml = require('xml');
 
-module.exports = function(stats) {
+module.exports = function(stats, options) {
   var data = {
     testsuites: [
       {
@@ -71,6 +71,12 @@ module.exports = function(stats) {
       }
     ]
   };
+
+  if (options && options.skipPassedTests) {
+    data.testsuites[0]._attr.time = "0.005";
+    data.testsuites[1].testsuite[0]._attr.time = "0.001";
+    data.testsuites[1].testsuite.splice(1, 1);
+  }
 
   if (stats.pending) {
     data.testsuites[0]._attr.tests += stats.pending;
