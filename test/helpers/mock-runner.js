@@ -21,6 +21,12 @@ Runner.prototype.end = function() {
 Runner.prototype.startSuite = function(suite) {
   suite.suites = suite.suites || [];
   suite.tests = suite.tests || [];
+
+  if (this._currentSuite) {
+    suite.parent = this._currentSuite;
+  }
+
+  this._currentSuite = suite;
   this.emit('suite', suite);
 };
 

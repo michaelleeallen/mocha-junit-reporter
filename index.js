@@ -18,8 +18,25 @@ function configureDefaults(options) {
   options = options.reporterOptions || {};
   options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
   options.toConsole = !!options.toConsole;
+  options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
 
   return options;
+}
+
+function defaultSuiteTitle(suite) {
+  return suite.title;
+}
+
+function fullSuiteTitle(suite, options) {
+  var parent = suite.parent;
+  var title = [ suite.title ];
+
+  while (parent) {
+    title.unshift(parent.title);
+    parent = parent.parent;
+  }
+
+  return title.join(options.suiteTitleSeparedBy);
 }
 
 function isInvalidSuite(suite) {
@@ -35,6 +52,7 @@ function isInvalidSuite(suite) {
 function MochaJUnitReporter(runner, options) {
   this._options = configureDefaults(options);
   this._runner = runner;
+  this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;
 
   // a list of all test cases that have run
   var testcases = [];
@@ -89,7 +107,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
     testsuite: [
       {
         _attr: {
-          name: suite.title,
+          name: this._generateSuiteTitle(suite, this._options),
           timestamp: new Date().toISOString().slice(0,-5),
           tests: suite.tests.length
         }
