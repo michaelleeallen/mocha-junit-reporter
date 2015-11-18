@@ -1,6 +1,6 @@
 {
   "name": "mocha-junit-reporter",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
