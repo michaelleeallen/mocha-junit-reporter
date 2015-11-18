@@ -72,6 +72,10 @@ function MochaJUnitReporter(runner, options) {
   }.bind(this));
 
   this._runner.on('suite', function(suite) {
+    if (suite.root) {
+      suite.title = 'Root Suite';
+    }
+
     if (!isInvalidSuite(suite)) {
       testsuites.push(this.getTestsuiteData(suite));
     }

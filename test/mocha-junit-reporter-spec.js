@@ -25,10 +25,13 @@ describe('mocha-junit-reporter', function() {
   function executeTestRunner(options) {
     options = options || {};
     options.invalidChar = options.invalidChar || '';
+    options.title = options.title || 'Foo Bar module';
+    options.root = (typeof options.root !== 'undefined') ? options.root : false;
     runner.start();
 
     runner.startSuite({
-      title: 'Foo Bar module',
+      title: options.title,
+      root: options.root,
       tests: [1, 2]
     });
 
@@ -251,6 +254,13 @@ describe('mocha-junit-reporter', function() {
 
     it('does not skip suites with nested tests', function() {
       runner.startSuite({title: 'test me', tests: [1]});
+      runner.end();
+
+      expect(testsuites).to.have.length(1);
+    });
+
+    it('does not skip root suite', function() {
+      runner.startSuite({title: '', root: true, suites: [1]});
       runner.end();
 
       expect(testsuites).to.have.length(1);
