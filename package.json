@@ -32,6 +32,6 @@
     "xml": "^1.0.0"
   },
   "peerDependencies": {
-    "mocha": "^2.2.5",
+    "mocha": "^2.2.5"
   }
 }
