@@ -24,12 +24,15 @@
   "devDependencies": {
     "chai": "^3.0.0",
     "chai-xml": "^0.3.0",
-    "test-console": "^1.0.0"
+    "test-console": "^1.0.0",
+    "mocha": "^2.2.5"
   },
   "dependencies": {
     "debug": "^2.2.0",
     "mkdirp": "~0.5.1",
-    "mocha": "^2.2.5",
     "xml": "^1.0.0"
+  },
+  "peerDependencies": {
+    "mocha": "^2.2.5"
   }
 }
