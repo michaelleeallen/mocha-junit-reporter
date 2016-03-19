@@ -91,6 +91,17 @@ describe('mocha-junit-reporter', function() {
     return new Reporter(runner, { reporterOptions: options });
   }
 
+  function getFileNameWithHash(path) {
+    var filenames = fs.readdirSync(path);
+    var expected = /(^results\.)([a-f0-9]{32})(\.xml)$/i;
+
+    for (var i = 0; i < filenames.length; i++) {
+      if (expected.test(filenames[i])) {
+        return filenames[i];
+      }
+    }
+  }
+
   before(function() {
     // cache this
     MOCHA_FILE = process.env.MOCHA_FILE;
@@ -131,6 +142,14 @@ describe('mocha-junit-reporter', function() {
     executeTestRunner();
 
     verifyMochaFile(filePath);
+  });
+
+  it('respects `[hash]` pattern in test results report filename', function() {
+    var dir = 'test/';
+    var path = dir + 'results.[hash].xml';
+    createReporter({mochaFile: path});
+    executeTestRunner();
+    verifyMochaFile(dir + getFileNameWithHash(dir));
   });
 
   it('will create intermediate directories', function() {

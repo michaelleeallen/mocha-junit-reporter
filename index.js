@@ -6,6 +6,7 @@ var fs = require('fs');
 var path = require('path');
 var debug = require('debug')('mocha-junit-reporter');
 var mkdirp = require('mkdirp');
+var md5 = require('md5');
 
 module.exports = MochaJUnitReporter;
 
@@ -232,6 +233,10 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
  */
 MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
   if (filePath) {
+    if (filePath.indexOf('[hash]') !== -1) {
+      filePath = filePath.replace('[hash]', md5(xml));
+    }
+
     debug('writing file to', filePath);
     mkdirp.sync(path.dirname(filePath));
 
