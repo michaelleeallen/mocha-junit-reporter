@@ -40,6 +40,8 @@ var mocha = new Mocha({
     }
 });
 ```
+Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files. 
+
 In order to display full suite title (including parents) just specify `useFullSuiteTitle` option
 ```javascript
 var mocha = new Mocha({
