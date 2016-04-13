@@ -116,6 +116,7 @@ describe('mocha-junit-reporter', function() {
     runner = new Runner();
     filePath = undefined;
     delete process.env.MOCHA_FILE;
+    delete process.env.PROPERTIES;
   });
 
   afterEach(function() {
@@ -135,6 +136,20 @@ describe('mocha-junit-reporter', function() {
     executeTestRunner();
 
     verifyMochaFile(process.env.MOCHA_FILE);
+  });
+
+  it('respects `process.env.PROPERTIES`', function() {
+    process.env.PROPERTIES = 'CUSTOM_PROPERTY:ABC~123';
+    createReporter({mochaFile: 'test/properties.xml'});
+    executeTestRunner();
+    verifyMochaFile(filePath, {
+      properties: [
+        {
+          name: 'CUSTOM_PROPERTY',
+          value: 'ABC~123'
+        }
+      ]
+    });
   });
 
   it('respects `--reporter-options mochaFile=`', function() {
