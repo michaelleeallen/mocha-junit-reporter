@@ -1,5 +1,6 @@
 #JUnit Reporter for Mocha
 [![Build Status](https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master)](https://travis-ci.org/michaelleeallen/mocha-junit-reporter)
+[![npm](https://img.shields.io/npm/v/mocha-junit-reporter.svg?maxAge=2592000)](https://www.npmjs.com/package/mocha-junit-reporter)
 
 Produces JUnit-style XML test results.
 
