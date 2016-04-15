@@ -18,6 +18,7 @@ function configureDefaults(options) {
   options = options || {};
   options = options.reporterOptions || {};
   options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
+  options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
   options.toConsole = !!options.toConsole;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
 
@@ -42,6 +43,38 @@ function fullSuiteTitle(suite, options) {
 
 function isInvalidSuite(suite) {
   return suite.title === '' || suite.tests.length === 0 && suite.suites.length === 0;
+}
+
+function parsePropertiesFromEnv(envValue) {
+  var properties = null;
+
+  if (process.env.PROPERTIES) {
+    properties = {}
+    var propertiesArray = process.env.PROPERTIES.split(',');
+    for (var i = 0; i < propertiesArray.length; i++) {
+      var propertyArgs = propertiesArray[i].split(':');
+      properties[propertyArgs[0]] = propertyArgs[1];
+    }
+  }
+
+  return properties;
+}
+
+function generateProperties(options) {
+  var properties = [];
+  for (var propertyName in options.properties) {
+    if (options.properties.hasOwnProperty(propertyName)) {
+      properties.push({
+        property: {
+          _attr: {
+            name: propertyName,
+            value: options.properties[propertyName]
+          }
+        }
+      })
+    }
+  }
+  return properties;
 }
 
 /**
@@ -110,7 +143,7 @@ function MochaJUnitReporter(runner, options) {
  * @return {Object}       - an object representing the xml node
  */
 MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
-  return {
+  var testSuite = {
     testsuite: [
       {
         _attr: {
@@ -120,7 +153,16 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
         }
       }
     ]
-  };
+  }
+
+  var properties = generateProperties(this._options);
+  if (properties.length) {
+    testSuite.testsuite.push({
+      properties: properties
+    });
+  }
+
+  return testSuite;
 };
 
 /**
@@ -183,10 +225,14 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var totalSuitesTime = 0;
   var totalTests = 0;
   var stats = this._runner.stats;
+  var hasProperties = !!this._options.properties;
 
   testsuites.forEach(function(suite) {
     var _suiteAttr = suite.testsuite[0]._attr;
-    var _cases = suite.testsuite.slice(1);
+    // properties are added before test cases so we want to make sure that we are grabbing test cases
+    // at the correct index
+    var _casesIndex = hasProperties ? 2 : 1;
+    var _cases = suite.testsuite.slice(_casesIndex);
 
     _suiteAttr.failures = 0;
     _suiteAttr.time = 0;

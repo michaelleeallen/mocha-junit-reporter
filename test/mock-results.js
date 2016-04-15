@@ -78,6 +78,27 @@ module.exports = function(stats, options) {
     data.testsuites[1].testsuite.splice(1, 1);
   }
 
+  if (options && options.properties) {
+    var properties = {
+      properties: []
+    }
+    for (var i = 0; i < options.properties.length; i++) {
+      var property = options.properties[i];
+      properties.properties.push({
+        property: [
+          {
+            _attr: {
+              name: property.name,
+              value: property.value
+            }
+          }
+        ]
+      })
+    }
+    data.testsuites[1].testsuite.push(properties)
+    data.testsuites[2].testsuite.push(properties)
+  }
+
   if (stats.pending) {
     data.testsuites[0]._attr.tests += stats.pending;
     data.testsuites[0]._attr.skipped = stats.pending;
