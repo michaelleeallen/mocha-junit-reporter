@@ -43,6 +43,11 @@ describe('mocha-junit-reporter', function() {
       stack: options.invalidChar + 'expected garthog to be dead' + options.invalidChar
     });
 
+    runner.fail(new Test('Baz can behave like a flandip', 'can behave like a flandip', 1), {
+      name: 'BazError',
+      message: 'expected baz to be masher, a hustler, an uninvited grasper of cone'
+    });
+
     runner.startSuite({
       title: 'Another suite!',
       tests: [1]

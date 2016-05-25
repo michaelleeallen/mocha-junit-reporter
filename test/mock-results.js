@@ -7,8 +7,8 @@ module.exports = function(stats, options) {
         _attr: {
           name: "Mocha Tests",
           tests: 3,
-          failures: "1",
-          time: "0.006"
+          failures: "2",
+          time: "0.007"
         }
       },
       {
@@ -18,8 +18,8 @@ module.exports = function(stats, options) {
               name: "Foo Bar module",
               timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
               tests: "2",
-              failures: "1",
-              time: "0.002"
+              failures: "2",
+              time: "0.003"
             }
           },
           {
@@ -42,6 +42,20 @@ module.exports = function(stats, options) {
               },
               {
                 failure: "expected garthog to be dead"
+              }
+            ]
+          },
+          {
+            testcase: [
+              {
+                _attr: {
+                  name: "Baz can behave like a flandip",
+                  classname: "can behave like a flandip",
+                  time: "0.001"
+                }
+              },
+              {
+                failure: "expected baz to be masher, a hustler, an uninvited grasper of cone"
               }
             ]
           }
@@ -73,8 +87,8 @@ module.exports = function(stats, options) {
   };
 
   if (options && options.skipPassedTests) {
-    data.testsuites[0]._attr.time = "0.005";
-    data.testsuites[1].testsuite[0]._attr.time = "0.001";
+    data.testsuites[0]._attr.time = "0.006";
+    data.testsuites[1].testsuite[0]._attr.time = "0.002";
     data.testsuites[1].testsuite.splice(1, 1);
   }
 
