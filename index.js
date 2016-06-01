@@ -182,8 +182,17 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     }]
   };
   if (err) {
+    var message;
+    if (err.message && typeof err.message.toString === 'function') {
+      message = err.message + '';
+    } else if (typeof err.inspect === 'function') {
+      message = err.inspect() + '';
+    } else {
+      message = '';
+    }
+    var failureMessage = err.stack || message;
     var failureElement = {
-      _cdata: this.removeInvalidCharacters(err.stack)
+      _cdata: this.removeInvalidCharacters(failureMessage)
     };
 
     config.testcase.push({failure: failureElement});
