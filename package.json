@@ -1,6 +1,6 @@
 {
   "name": "mocha-junit-reporter",
-  "version": "1.11.1",
+  "version": "1.11.2",
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,7 @@
     "chai": "^3.0.0",
     "chai-xml": "^0.3.0",
     "test-console": "^1.0.0",
-    "mocha": "^2.2.5"
+    "mocha": "^3.0.0"
   },
   "dependencies": {
     "debug": "^2.2.0",
@@ -34,6 +34,6 @@
     "xml": "^1.0.0"
   },
   "peerDependencies": {
-    "mocha": "^2.2.5"
+    "mocha": "^3 || ^2.2.5"
   }
 }
