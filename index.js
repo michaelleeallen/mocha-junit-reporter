@@ -50,7 +50,7 @@ function fullSuiteTitle(suite) {
 }
 
 function isInvalidSuite(suite) {
-  return (!suite.root && suite.title === '') || suite.tests.length === 0 && suite.suites.length === 0;
+  return (!suite.root && suite.title === '') || (suite.tests.length === 0 && suite.suites.length === 0);
 }
 
 function parsePropertiesFromEnv(envValue) {
