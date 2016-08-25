@@ -21,28 +21,36 @@ function configureDefaults(options) {
   options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
   options.toConsole = !!options.toConsole;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
+  options.rootSuiteTitle = 'Root Suite';
 
   return options;
 }
 
 function defaultSuiteTitle(suite) {
+  if (suite.root && suite.title === '') {
+      return this._options.rootSuiteTitle;
+  }
   return suite.title;
 }
 
-function fullSuiteTitle(suite, options) {
+function fullSuiteTitle(suite) {
   var parent = suite.parent;
   var title = [ suite.title ];
 
   while (parent) {
-    title.unshift(parent.title);
+    if (parent.root && parent.title === '') {
+      title.unshift(this._options.rootSuiteTitle);
+    } else {
+      title.unshift(parent.title);
+    }
     parent = parent.parent;
   }
 
-  return title.join(options.suiteTitleSeparedBy);
+  return title.join(this._options.suiteTitleSeparedBy);
 }
 
 function isInvalidSuite(suite) {
-  return suite.title === '' || suite.tests.length === 0 && suite.suites.length === 0;
+  return (!suite.root && suite.title === '') || (suite.tests.length === 0 && suite.suites.length === 0);
 }
 
 function parsePropertiesFromEnv(envValue) {
@@ -106,10 +114,6 @@ function MochaJUnitReporter(runner, options) {
   }.bind(this));
 
   this._runner.on('suite', function(suite) {
-    if (suite.root) {
-      suite.title = 'Root Suite';
-    }
-
     if (!isInvalidSuite(suite)) {
       testsuites.push(this.getTestsuiteData(suite));
     }
@@ -147,7 +151,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
     testsuite: [
       {
         _attr: {
-          name: this._generateSuiteTitle(suite, this._options),
+          name: this._generateSuiteTitle(suite),
           timestamp: new Date().toISOString().slice(0,-5),
           tests: suite.tests.length
         }
