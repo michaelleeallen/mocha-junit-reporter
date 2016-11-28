@@ -57,7 +57,7 @@ function parsePropertiesFromEnv(envValue) {
   var properties = null;
 
   if (process.env.PROPERTIES) {
-    properties = {}
+    properties = {};
     var propertiesArray = process.env.PROPERTIES.split(',');
     for (var i = 0; i < propertiesArray.length; i++) {
       var propertyArgs = propertiesArray[i].split(':');
@@ -79,7 +79,7 @@ function generateProperties(options) {
             value: options.properties[propertyName]
           }
         }
-      })
+      });
     }
   }
   return properties;
@@ -157,6 +157,10 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
         }
       }
     ]
+  };
+
+  if(suite.file) {
+    testSuite.testsuite[0]._attr.file =  suite.file;
   }
 
   var properties = generateProperties(this._options);
@@ -185,6 +189,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       }
     }]
   };
+
   if (err) {
     var message;
     if (err.message && typeof err.message.toString === 'function') {
