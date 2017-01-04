@@ -299,7 +299,11 @@ MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
     debug('writing file to', filePath);
     mkdirp.sync(path.dirname(filePath));
 
-    fs.writeFileSync(filePath, xml, 'utf-8');
+    try {
+        fs.writeFileSync(filePath, xml, 'utf-8');
+    } catch (exc) {
+        debug('problem writing results: ' + exc);
+    }
     debug('results written successfully');
   }
 };
