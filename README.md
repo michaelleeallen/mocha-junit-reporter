@@ -44,7 +44,7 @@ var mocha = new Mocha({
 
 ### Append properties to testsuite
 
-You can also properties to the report under `testsuite`. This is useful if you want your CI environment to add extra build props to the report for analytics purposes
+You can also add properties to the report under `testsuite`. This is useful if you want your CI environment to add extra build props to the report for analytics purposes
 
 ```
 <testsuites>
