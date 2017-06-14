@@ -108,3 +108,19 @@ Here is an example of the XML output when using the `testCaseSwitchClassnameAndN
 |----------------------------------|--------|
 | `true`                           | `<testcase name="should behave like so" classname="Super Suite should behave like so">` |
 | `false` (default)                | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
+
+You can also configure the `testsuites.name` attribute by setting `reporterOptions.fileSuiteTitle` and the root suite's `name` attribute by setting `reporterOptions.rootSuiteTitle`.
+
+### Full configuration options
+
+| Parameter | Effect |
+| --------- | ------ |
+| mochaFile | configures the file to write reports to |
+| includePending | if set to a truthy value pending tests will be included in the report |
+| properties | a hash of additional properties to add to each test suite |
+| toConsole | if set to a truthy value the produced XML will be logged to the console |
+| useFullSuiteTitle | if set to a truthy value nested suites' titles will show the suite lineage |
+| suiteTitleSeparedBy | the character to use to separate nested suite titles. (defaults to ' ') |
+| testCaseSwitchClassnameAndName | set to a truthy value to switch name and classname values |
+| rootSuiteName | the name for the root suite. (defaults to 'Root Suite') |
+| testsuitesName | the name for the `testsuites` tag (defaults to 'Mocha Tests') |

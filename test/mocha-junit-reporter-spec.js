@@ -263,11 +263,7 @@ describe('mocha-junit-reporter', function() {
     var reporter, testsuites;
 
     beforeEach(function() {
-      reporter = createReporter({mochaFile: 'test/mocha.xml'});
-
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
+      reporter = spyingReporter()
     });
 
     it('skips suites with empty title', function() {
@@ -304,6 +300,52 @@ describe('mocha-junit-reporter', function() {
 
       expect(testsuites).to.have.length(1);
     });
+    
+    it('uses "Root Suite" by default', function() {
+      runner.startSuite({title: '', root: true, suites: [1]})
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr).to.have.property('name', 'Root Suite')
+    });
+    
+    it('respects the `rootSuiteName`', function() {
+      var name = 'The Root Suite!';
+      reporter = spyingReporter({rootSuiteName: name});
+      runner.startSuite({title: '', root: true, suites: [1]})
+      runner.end();
+      
+      expect(testsuites[0].testsuite[0]._attr).to.have.property('name', name)
+    });
+    
+    it('uses "Mocha Tests" by default', function() {
+      runner.startSuite({title: '', root: true, suites: [1]})
+      runner.end();
+      xml = reporter.getXml(testsuites);
+      
+      expect(xml.indexOf('testsuites name="Mocha Tests"')).not.to.equal(-1)
+    });
+    
+    it('respects the `testsuitesName`', function() {
+      var xml, title ='SuitesTitle';
+      
+      reporter = spyingReporter({testsuitesName: title});
+      runner.startSuite({title: '', root: true, suites: [1]})
+      runner.end();
+      xml = reporter.getXml(testsuites);
+      expect(xml.indexOf('testsuites name="SuitesTitle"')).not.to.equal(-1)
+    });
+    
+    function spyingReporter(options) {
+      options = options || {};
+      options.mochaFile = options.mochaFile || 'test/mocha.xml';
+      
+      reporter = createReporter(options);
+
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      
+      return reporter;
+    }
   });
 
   describe('Feature "Configurable classname/name switch"', function() {
