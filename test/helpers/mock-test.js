@@ -9,4 +9,4 @@ function Test(fullTitle, title, duration) {
   };
 }
 
-module.exports = Test
+module.exports = Test;

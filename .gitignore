@@ -1,5 +1,6 @@
-node_modules
-test/mocha.xml
-test/subdir/
-node-debug*
 .c9/
+node_modules/
+test/subdir/
+test/mocha.xml
+node-debug*
+npm-debug*

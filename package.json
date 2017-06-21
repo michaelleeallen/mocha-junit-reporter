@@ -4,6 +4,7 @@
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
+    "lint": "./node_modules/.bin/eslint index.js test/*; exit 0",
     "test": "MOCHA_FILE=test/mocha.xml node_modules/.bin/mocha test --reporter=spec",
     "tdd": "MOCHA_FILE=test/mocha.xml node_modules/.bin/mocha test --reporter=min --watch"
   },
@@ -24,8 +25,9 @@
   "devDependencies": {
     "chai": "^3.0.0",
     "chai-xml": "^0.3.0",
-    "test-console": "^1.0.0",
-    "mocha": "^3.0.0"
+    "eslint": "^4.0.0",
+    "mocha": "^3.0.0",
+    "test-console": "^1.0.0"
   },
   "dependencies": {
     "debug": "^2.2.0",
