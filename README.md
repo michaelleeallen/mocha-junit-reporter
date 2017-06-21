@@ -122,5 +122,5 @@ You can also configure the `testsuites.name` attribute by setting `reporterOptio
 | useFullSuiteTitle | if set to a truthy value nested suites' titles will show the suite lineage |
 | suiteTitleSeparedBy | the character to use to separate nested suite titles. (defaults to ' ') |
 | testCaseSwitchClassnameAndName | set to a truthy value to switch name and classname values |
-| rootSuiteName | the name for the root suite. (defaults to 'Root Suite') |
-| testsuitesName | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
+| rootSuiteTitle | the name for the root suite. (defaults to 'Root Suite') |
+| testsuitesTitle | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
