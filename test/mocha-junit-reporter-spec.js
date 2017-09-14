@@ -305,4 +305,38 @@ describe('mocha-junit-reporter', function() {
       expect(testsuites).to.have.length(1);
     });
   });
+
+  describe('Feature "Configurable classname/name switch"', function() {
+    var reporter, testsuites, mockedTestCase = {
+      title: "should behave like so",
+      timestamp: 123,
+      tests: "1",
+      failures: "0",
+      time: "0.004",
+      fullTitle: function() {
+        return 'Super Suite ' + this.title
+      }
+    };
+
+    it('should generate valid testCase for testCaseSwitchClassnameAndName default', function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml'});
+      var testCase = reporter.getTestcaseData(mockedTestCase)
+      expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
+      expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
+    });
+
+    it('should generate valid testCase for testCaseSwitchClassnameAndName=false', function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml', testCaseSwitchClassnameAndName: false});
+      var testCase = reporter.getTestcaseData(mockedTestCase)
+      expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
+      expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
+    });
+
+    it('should generate valid testCase for testCaseSwitchClassnameAndName=true', function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml', testCaseSwitchClassnameAndName: true});
+      var testCase = reporter.getTestcaseData(mockedTestCase)
+      expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.title);
+      expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
+    });
+  });
 });

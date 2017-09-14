@@ -20,6 +20,7 @@ function configureDefaults(options) {
   options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
   options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
   options.toConsole = !!options.toConsole;
+  options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
   options.rootSuiteTitle = 'Root Suite';
 
@@ -183,9 +184,9 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var config = {
     testcase: [{
       _attr: {
-        name: test.fullTitle(),
+        name: this._options.testCaseSwitchClassnameAndName ? test.title : test.fullTitle(),
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
-        classname: test.title
+        classname: this._options.testCaseSwitchClassnameAndName ? test.fullTitle() : test.title
       }
     }]
   };
