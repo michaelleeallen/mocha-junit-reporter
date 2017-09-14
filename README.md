@@ -104,7 +104,7 @@ var mocha = new Mocha({
 
 Here is an example of the XML output when using the option:
 
-| `testCaseSwitchClassnameAndName` | XML output |
+| value | XML output |
 |----------------------------------|--------|
-| `true`                           | `... <testcase name="should behave like so" classname="Super Suite should behave like so"> ...` |
-| `false` (default)                | `... <testcase name="Super Suite should behave like so" classname="should behave like so"> ...` |
+| `true`                           | `<testcase name="should behave like so" classname="Super Suite should behave like so">` |
+| `false` (default)                | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
