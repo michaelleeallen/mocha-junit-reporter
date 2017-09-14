@@ -1,4 +1,5 @@
-#JUnit Reporter for Mocha
+# JUnit Reporter for Mocha
+
 [![Build Status](https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master)](https://travis-ci.org/michaelleeallen/mocha-junit-reporter)
 [![npm](https://img.shields.io/npm/v/mocha-junit-reporter.svg?maxAge=2592000)](https://www.npmjs.com/package/mocha-junit-reporter)
 
@@ -89,3 +90,21 @@ var mocha = new Mocha({
     }
 });
 ```
+
+If you want to **switch classname and name** of the generated testCase XML entries, you can use the `testCaseSwitchClassnameAndName` reporter option.
+
+```javascript
+var mocha = new Mocha({
+    reporter: 'mocha-junit-reporter',
+    reporterOptions: {
+        testCaseSwitchClassnameAndName: true
+    }
+});
+```
+
+Here is an example of the XML output when using the option:
+
+| `testCaseSwitchClassnameAndName` | XML output |
+|----------------------------------|--------|
+| `true`                           | `... <testcase name="should behave like so" classname="Super Suite should behave like so"> ...` |
+| `false` (default)                | `... <testcase name="Super Suite should behave like so" classname="should behave like so"> ...` |
