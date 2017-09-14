@@ -102,7 +102,7 @@ var mocha = new Mocha({
 });
 ```
 
-Here is an example of the XML output when using the option:
+Here is an example of the XML output when using the `testCaseSwitchClassnameAndName` option:
 
 | value | XML output |
 |----------------------------------|--------|
