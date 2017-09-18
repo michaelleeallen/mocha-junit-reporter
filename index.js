@@ -22,7 +22,9 @@ function configureDefaults(options) {
   options.toConsole = !!options.toConsole;
   options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
-  options.rootSuiteTitle = 'Root Suite';
+  options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy || ' ';
+  options.rootSuiteTitle = options.rootSuiteTitle || 'Root Suite';
+  options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
 
   return options;
 }
@@ -47,7 +49,7 @@ function fullSuiteTitle(suite) {
     parent = parent.parent;
   }
 
-  return title.join(this._options.suiteTitleSeparedBy);
+  return title.join(this._options.suiteTitleSeparatedBy);
 }
 
 function isInvalidSuite(suite) {
@@ -57,9 +59,9 @@ function isInvalidSuite(suite) {
 function parsePropertiesFromEnv(envValue) {
   var properties = null;
 
-  if (process.env.PROPERTIES) {
+  if (envValue) {
     properties = {};
-    var propertiesArray = process.env.PROPERTIES.split(',');
+    var propertiesArray = envValue.split(',');
     for (var i = 0; i < propertiesArray.length; i++) {
       var propertyArgs = propertiesArray[i].split(':');
       properties[propertyArgs[0]] = propertyArgs[1];
@@ -230,7 +232,7 @@ MochaJUnitReporter.prototype.flush = function(testsuites){
   this.writeXmlToDisk(xml, this._options.mochaFile);
 
   if (this._options.toConsole === true) {
-    console.log(xml);
+    console.log(xml); // eslint-disable-line no-console
   }
 };
 
@@ -275,7 +277,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
 
   var rootSuite = {
     _attr: {
-      name: 'Mocha Tests',
+      name: this._options.testsuitesTitle,
       time: totalSuitesTime,
       tests: totalTests,
       failures: stats.failures

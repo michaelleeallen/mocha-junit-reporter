@@ -95,7 +95,7 @@ module.exports = function(stats, options) {
   if (options && options.properties) {
     var properties = {
       properties: []
-    }
+    };
     for (var i = 0; i < options.properties.length; i++) {
       var property = options.properties[i];
       properties.properties.push({
@@ -107,10 +107,10 @@ module.exports = function(stats, options) {
             }
           }
         ]
-      })
+      });
     }
-    data.testsuites[1].testsuite.push(properties)
-    data.testsuites[2].testsuite.push(properties)
+    data.testsuites[1].testsuite.push(properties);
+    data.testsuites[2].testsuite.push(properties);
   }
 
   if (stats.pending) {
