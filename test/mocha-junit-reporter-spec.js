@@ -189,6 +189,13 @@ describe('mocha-junit-reporter', function() {
     verifyMochaFile(filePath);
   });
 
+  it('creates valid XML report even if title contain ANSI character sequences', function() {
+    createReporter({mochaFile: 'test/mocha.xml'});
+    executeTestRunner({title: '[38;5;104m[1mFoo Bar module[22m'});
+
+    verifyMochaFile(filePath);
+  });
+
   it('outputs pending tests if "includePending" is specified', function() {
     createReporter({mochaFile: 'test/mocha.xml', includePending: true});
     executeTestRunner({includePending: true});

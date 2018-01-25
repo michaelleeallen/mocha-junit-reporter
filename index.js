@@ -7,6 +7,7 @@ var path = require('path');
 var debug = require('debug')('mocha-junit-reporter');
 var mkdirp = require('mkdirp');
 var md5 = require('md5');
+var stripAnsi = require('strip-ansi');
 
 module.exports = MochaJUnitReporter;
 
@@ -31,9 +32,9 @@ function configureDefaults(options) {
 
 function defaultSuiteTitle(suite) {
   if (suite.root && suite.title === '') {
-      return this._options.rootSuiteTitle;
+      return stripAnsi(this._options.rootSuiteTitle);
   }
-  return suite.title;
+  return stripAnsi(suite.title);
 }
 
 function fullSuiteTitle(suite) {
@@ -49,7 +50,7 @@ function fullSuiteTitle(suite) {
     parent = parent.parent;
   }
 
-  return title.join(this._options.suiteTitleSeparatedBy);
+  return stripAnsi(title.join(this._options.suiteTitleSeparatedBy));
 }
 
 function isInvalidSuite(suite) {
@@ -186,9 +187,9 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var config = {
     testcase: [{
       _attr: {
-        name: this._options.testCaseSwitchClassnameAndName ? test.title : test.fullTitle(),
+        name: this._options.testCaseSwitchClassnameAndName ? stripAnsi(test.title) : stripAnsi(test.fullTitle()),
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
-        classname: this._options.testCaseSwitchClassnameAndName ? test.fullTitle() : test.title
+        classname: this._options.testCaseSwitchClassnameAndName ? stripAnsi(test.fullTitle()) : stripAnsi(test.title)
       }
     }]
   };
