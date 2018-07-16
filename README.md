@@ -109,7 +109,7 @@ Here is an example of the XML output when using the `testCaseSwitchClassnameAndN
 | `true`                           | `<testcase name="should behave like so" classname="Super Suite should behave like so">` |
 | `false` (default)                | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
 
-You can also configure the `testsuites.name` attribute by setting `reporterOptions.fileSuiteTitle` and the root suite's `name` attribute by setting `reporterOptions.rootSuiteTitle`.
+You can also configure the `testsuites.name` attribute by setting `reporterOptions.testsuitesTitle` and the root suite's `name` attribute by setting `reporterOptions.rootSuiteTitle`.
 
 ### Full configuration options
 
