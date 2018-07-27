@@ -184,12 +184,15 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
  * @returns {object}
  */
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
+  var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
+  var name = stripAnsi(test.fullTitle());
+  var classname = stripAnsi(test.title)
   var config = {
     testcase: [{
       _attr: {
-        name: this._options.testCaseSwitchClassnameAndName ? stripAnsi(test.title) : stripAnsi(test.fullTitle()),
+        name: flipClassAndName ? classname : name,
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
-        classname: this._options.testCaseSwitchClassnameAndName ? stripAnsi(test.fullTitle()) : stripAnsi(test.title)
+        classname: flipClassAndName ? name : classname
       }
     }]
   };
@@ -205,6 +208,10 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     }
     var failureMessage = err.stack || message;
     var failureElement = {
+      _attr: {
+        message: err.message || '',
+        type: err.name || ''
+      },
       _cdata: this.removeInvalidCharacters(failureMessage)
     };
 
