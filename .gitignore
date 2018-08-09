@@ -1,6 +1,7 @@
 .c9/
 node_modules/
 test/subdir/
-test/mocha.xml
+test/*.xml
 node-debug*
 npm-debug*
+package-lock.json

@@ -41,7 +41,13 @@ module.exports = function(stats, options) {
                 }
               },
               {
-                failure: "expected garthog to be dead"
+                failure: {
+                  _attr: {
+                      message: "",
+                      type: ""
+                  },
+                  _cdata: "expected garthog to be dead"
+                }
               }
             ]
           },
@@ -55,7 +61,13 @@ module.exports = function(stats, options) {
                 }
               },
               {
-                failure: "expected baz to be masher, a hustler, an uninvited grasper of cone"
+                failure: {
+                  _attr: {
+                      message: "expected baz to be masher, a hustler, an uninvited grasper of cone",
+                      type: "BazError"
+                  },
+                  _cdata: "expected baz to be masher, a hustler, an uninvited grasper of cone"
+                }
               }
             ]
           }
