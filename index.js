@@ -200,7 +200,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   };
   if(flipClassThenTrim){
     config.testcase[0]._attr.name = classname;
-    config.testcase[0]._attr.classname = stripAnsi(test.shortTitle())
+    config.testcase[0]._attr.classname = stripAnsi(test.fullTitle().replace(test.title, ''));
   }
 
   if (err) {

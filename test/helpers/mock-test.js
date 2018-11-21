@@ -5,9 +5,6 @@ function Test(fullTitle, title, duration) {
     title: title,
     duration: duration,
     fullTitle: function() { return fullTitle; },
-    shortTitle: function(){ 
-      return fullTitle.replace(title, '');
-     },
     slow: function() {}
   };
 }
