@@ -111,6 +111,26 @@ Here is an example of the XML output when using the `testCaseSwitchClassnameAndN
 
 You can also configure the `testsuites.name` attribute by setting `reporterOptions.testsuitesTitle` and the root suite's `name` attribute by setting `reporterOptions.rootSuiteTitle`.
 
+If you want to switch classname with name **and** set the classname equal to the name of the testsuite of the generated testCase XML entries, you can use the `trimAndSwitchClassnameAndName` reporter option.
+
+```javascript
+var mocha = new Mocha({
+    reporter: 'mocha-junit-reporter',
+    reporterOptions: {
+        trimAndSwitchClassnameAndName: true
+    }
+});
+```
+
+Here is an example of the XML output when using the `trimAndSwitchClassnameAndName` option:
+
+| value | XML output |
+|----------------------------------|--------|
+| `true`                           | `<testcase name="should behave like so" classname="Super Suite">` |
+| `false` (default)                | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
+
+
+
 ### Full configuration options
 
 | Parameter | Effect |
