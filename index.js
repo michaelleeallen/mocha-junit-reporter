@@ -22,6 +22,7 @@ function configureDefaults(options) {
   options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
   options.toConsole = !!options.toConsole;
   options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
+  options.trimAndSwitchClassnameAndName = options.trimAndSwitchClassnameAndName || false;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
   options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy || ' ';
   options.rootSuiteTitle = options.rootSuiteTitle || 'Root Suite';
@@ -185,17 +186,22 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
  */
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
+  var flipClassThenTrim = this._options.trimAndSwitchClassnameAndName;
   var name = stripAnsi(test.fullTitle());
   var classname = stripAnsi(test.title)
   var config = {
     testcase: [{
       _attr: {
-        name: flipClassAndName ? classname : name,
+        name: flipClassAndName ? classname :  name,
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
         classname: flipClassAndName ? name : classname
       }
     }]
   };
+  if(flipClassThenTrim){
+    config.testcase[0]._attr.name = classname;
+    config.testcase[0]._attr.classname = stripAnsi(test.shortTitle())
+  }
 
   if (err) {
     var message;
