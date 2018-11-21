@@ -393,4 +393,41 @@ describe('mocha-junit-reporter', function() {
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
     });
   });
+
+  describe('Feature "Switch classname/name and set classname to testsuite name"', function() {
+    var reporter, testsuites, mockedTestCase = {
+      title: "should behave like so",
+      timestamp: 123,
+      tests: "1",
+      failures: "0",
+      time: "0.004",
+      fullTitle: function() {
+        return 'Super Suite ' + this.title
+      },
+      shortTitle: function(){
+        return this.fullTitle().replace(this.title, '');
+      }
+    };
+
+    it('should generate valid testCase for trimAndSwitchClassnameAndName default', function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml'});
+      var testCase = reporter.getTestcaseData(mockedTestCase)
+      expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
+      expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
+    });
+
+    it('should generate valid testCase for trimAndSwitchClassnameAndName=false', function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml', trimAndSwitchClassnameAndName: false});
+      var testCase = reporter.getTestcaseData(mockedTestCase)
+      expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
+      expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
+    });
+
+    it('should generate valid testCase for trimAndSwitchClassnameAndName=true', function() {
+      reporter = createReporter({mochaFile: 'test/mocha.xml', trimAndSwitchClassnameAndName: true});
+      var testCase = reporter.getTestcaseData(mockedTestCase)
+      expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.title);
+      expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.shortTitle());
+    });
+  });
 });
