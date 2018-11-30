@@ -405,7 +405,7 @@ describe('mocha-junit-reporter', function() {
         return 'Super Suite ' + this.title
       },
       shortTitle: function(){
-        return this.fullTitle().replace(this.title, '');
+        return this.fullTitle().replace(this.title, '').trim();
       }
     };
 
