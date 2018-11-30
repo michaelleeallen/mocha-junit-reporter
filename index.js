@@ -192,7 +192,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var config = {
     testcase: [{
       _attr: {
-        name: flipClassAndName ? classname :  name,
+        name: flipClassAndName ? classname : name,
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
         classname: flipClassAndName ? name : classname
       }
