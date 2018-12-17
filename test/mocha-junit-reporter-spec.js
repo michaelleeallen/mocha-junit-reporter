@@ -271,6 +271,74 @@ describe('mocha-junit-reporter', function() {
 
   });
 
+  describe('when "attachments" option is specified', function() {
+    it('adds attachments to xml report', function() {
+      var reporter = createReporter({attachments: true});
+      var suite = {title: 'with attachments', tests: [1]};
+      var test = new Test('has attachment', 'included attachment', 1);
+      var filePath = '/path/to/file';
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.attachments = [filePath];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(2);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', '[[ATTACHMENT|' + filePath + ']]');
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+    });
+
+    it('does not add system-out if no attachments were passed', function() {
+      var reporter = createReporter({attachments: true});
+      var suite = {title: 'with attachments', tests: [1]};
+      var test = new Test('has attachment', 'included attachment', 1);
+      var filePath = '/path/to/file';
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.not.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+    });
+
+    it('does not add system-out if no attachments array is empty', function() {
+      var reporter = createReporter({attachments: true});
+      var suite = {title: 'with attachments', tests: [1]};
+      var test = new Test('has attachment', 'included attachment', 1);
+      var filePath = '/path/to/file';
+      var testsuites;
+      var xml;
+      test.attachments = [];
+      runner.startSuite(suite);
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.not.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+    });
+  });
+
   describe('Output', function() {
     var reporter, testsuites;
 
@@ -361,34 +429,34 @@ describe('mocha-junit-reporter', function() {
   });
 
   describe('Feature "Configurable classname/name switch"', function() {
-    var reporter, testsuites, mockedTestCase = {
+    var reporter, mockedTestCase = {
       title: "should behave like so",
       timestamp: 123,
       tests: "1",
       failures: "0",
       time: "0.004",
       fullTitle: function() {
-        return 'Super Suite ' + this.title
+        return 'Super Suite ' + this.title;
       }
     };
 
     it('should generate valid testCase for testCaseSwitchClassnameAndName default', function() {
       reporter = createReporter({mochaFile: 'test/mocha.xml'});
-      var testCase = reporter.getTestcaseData(mockedTestCase)
+      var testCase = reporter.getTestcaseData(mockedTestCase);
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
     });
 
     it('should generate valid testCase for testCaseSwitchClassnameAndName=false', function() {
       reporter = createReporter({mochaFile: 'test/mocha.xml', testCaseSwitchClassnameAndName: false});
-      var testCase = reporter.getTestcaseData(mockedTestCase)
+      var testCase = reporter.getTestcaseData(mockedTestCase);
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
     });
 
     it('should generate valid testCase for testCaseSwitchClassnameAndName=true', function() {
       reporter = createReporter({mochaFile: 'test/mocha.xml', testCaseSwitchClassnameAndName: true});
-      var testCase = reporter.getTestcaseData(mockedTestCase)
+      var testCase = reporter.getTestcaseData(mockedTestCase);
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.title);
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
     });
