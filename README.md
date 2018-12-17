@@ -111,6 +111,16 @@ Here is an example of the XML output when using the `testCaseSwitchClassnameAndN
 
 You can also configure the `testsuites.name` attribute by setting `reporterOptions.testsuitesTitle` and the root suite's `name` attribute by setting `reporterOptions.rootSuiteTitle`.
 
+### Attachments
+enabling the `attachments` configuration option will allow for attaching files and screenshots in [JUnit Attachments Plugin](https://wiki.jenkins.io/display/JENKINS/JUnit+Attachments+Plugin) format.
+
+Attachment path can be injected into the test object
+```js
+it ('should include attachment', function () {
+  this.test.attachments = ['/absolut/path/to/file.png'];
+});
+```
+
 ### Full configuration options
 
 | Parameter | Effect |
@@ -124,3 +134,4 @@ You can also configure the `testsuites.name` attribute by setting `reporterOptio
 | testCaseSwitchClassnameAndName | set to a truthy value to switch name and classname values |
 | rootSuiteTitle | the name for the root suite. (defaults to 'Root Suite') |
 | testsuitesTitle | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
+| attachments | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format |

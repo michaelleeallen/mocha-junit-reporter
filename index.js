@@ -20,6 +20,7 @@ function configureDefaults(options) {
   options = options.reporterOptions || {};
   options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
   options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
+  options.attachments = options.attachments || process.env.ATTACHMENTS || false;
   options.toConsole = !!options.toConsole;
   options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
@@ -186,7 +187,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
   var name = stripAnsi(test.fullTitle());
-  var classname = stripAnsi(test.title)
+  var classname = stripAnsi(test.title);
   var config = {
     testcase: [{
       _attr: {
@@ -196,6 +197,14 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       }
     }]
   };
+
+  if (this._options.attachments && test.attachments && test.attachments.length > 0) {
+    config.testcase.push({'system-out': test.attachments.map(
+      function (file) {
+        return '[[ATTACHMENT|' + file + ']]';
+      }
+    ).join('\n')});
+  }
 
   if (err) {
     var message;
