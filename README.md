@@ -135,3 +135,5 @@ it ('should include attachment', function () {
 | rootSuiteTitle | the name for the root suite. (defaults to 'Root Suite') |
 | testsuitesTitle | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
 | attachments | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format |
+| antMode | set to truthy value to return xml compatible with [Ant JUnit schema](http://windyroad.org/dl/Open%20Source/JUnit.xsd)  |
+| antHostname | hostname to use when running in `antMode`  will default to environment `HOSTNAME` |

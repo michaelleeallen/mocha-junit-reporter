@@ -19,8 +19,10 @@ function configureDefaults(options) {
   options = options || {};
   options = options.reporterOptions || {};
   options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
-  options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
-  options.attachments = options.attachments || process.env.ATTACHMENTS || false;
+  options.attachments = deduceSetting(options.attachments, 'ATTACHMENTS', false);
+  options.antMode = deduceSetting(options.antMode, 'ANT_MODE', false);
+  options.antHostname = deduceSetting(options.antHostname, 'ANT_HOSTNAME', process.env.HOSTNAME);
+  options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || (options.antMode ? [] : null);
   options.toConsole = !!options.toConsole;
   options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
@@ -29,6 +31,13 @@ function configureDefaults(options) {
   options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
 
   return options;
+}
+
+function deduceSetting (setting, env, defaultVal) {
+  if (process.env[env] !== undefined) {
+    return process.env[env];
+  }
+  return setting === undefined ? defaultVal : setting;
 }
 
 function defaultSuiteTitle(suite) {
@@ -152,31 +161,40 @@ function MochaJUnitReporter(runner, options) {
  * @return {Object}       - an object representing the xml node
  */
 MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
-  var testSuite = {
-    testsuite: [
-      {
-        _attr: {
-          name: this._generateSuiteTitle(suite),
-          timestamp: new Date().toISOString().slice(0,-5),
-          tests: suite.tests.length
-        }
-      }
-    ]
+  var antMode = this._options.antMode;
+  var hostname = this._options.antHostname;
+
+  var _attr =  {
+    name: this._generateSuiteTitle(suite),
+    timestamp: new Date().toISOString().slice(0,-5),
+    tests: suite.tests.length
   };
+  var testSuite = { testsuite: [ { _attr: _attr } ] };
+
 
   if(suite.file) {
     testSuite.testsuite[0]._attr.file =  suite.file;
   }
 
   var properties = generateProperties(this._options);
-  if (properties.length) {
+  if (properties.length || antMode) {
     testSuite.testsuite.push({
       properties: properties
     });
   }
 
+  if (antMode) {
+    _attr.package = _attr.name;
+    _attr.hostname = hostname;
+    _attr.id = this.antID;
+    _attr.errors = 0;
+    this.antID += 1;
+  }
+
   return testSuite;
 };
+
+MochaJUnitReporter.prototype.antID = 0;
 
 /**
  * Produces an xml config for a given test case.
@@ -264,6 +282,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var totalTests = 0;
   var stats = this._runner.stats;
   var hasProperties = !!this._options.properties;
+  var antMode = this._options.antMode;
 
   testsuites.forEach(function(suite) {
     var _suiteAttr = suite.testsuite[0]._attr;
@@ -284,6 +303,11 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
       _suiteAttr.time += testcase.testcase[0]._attr.time;
     });
 
+    if (antMode) {
+      suite.testsuite.push({ 'system-out': [] });
+      suite.testsuite.push({ 'system-err': [] });
+    }
+
     if (!_suiteAttr.skipped) {
       delete _suiteAttr.skipped;
     }
@@ -292,22 +316,23 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     totalTests += _suiteAttr.tests;
   });
 
-  var rootSuite = {
-    _attr: {
-      name: this._options.testsuitesTitle,
-      time: totalSuitesTime,
-      tests: totalTests,
-      failures: stats.failures
-    }
-  };
 
-  if (stats.pending) {
-    rootSuite._attr.skipped = stats.pending;
+  if (!antMode) {
+    var rootSuite = {
+      _attr: {
+        name: this._options.testsuitesTitle,
+        time: totalSuitesTime,
+        tests: totalTests,
+        failures: stats.failures
+      }
+    };
+    if (stats.pending) {
+      rootSuite._attr.skipped = stats.pending;
+    }
+    testsuites = [ rootSuite ].concat(testsuites);
   }
 
-  return xml({
-    testsuites: [ rootSuite ].concat(testsuites)
-  }, { declaration: true, indent: '  ' });
+  return xml({ testsuites: testsuites }, { declaration: true, indent: '  ' });
 };
 
 /**
