@@ -482,11 +482,13 @@ describe('mocha-junit-reporter', function() {
       },
     ];
 
-    it('generates Jenkins compatible classnames', function() {
+    it('generates Jenkins compatible classnames and suite name', function() {
       var reporter = configureReporter({jenkinsMode: true }, suites);
 
+      expect(reporter.suites[0].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title);
       expect(reporter.suites[0].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].pass[0].title);
       expect(reporter.suites[0].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title);
+      expect(reporter.suites[1].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
       expect(reporter.suites[1].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].suites[0].fail[0].title);
       expect(reporter.suites[1].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
     });

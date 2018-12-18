@@ -22,10 +22,11 @@ function configureDefaults(options) {
   options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
   options.attachments = deduceSetting(options.attachments, 'ATTACHMENTS', false);
   options.jenkinsMode = deduceSetting(options.jenkinsMode, 'JENKINS_MODE', false);
+  options.useFullSuiteTitle = options.useFullSuiteTitle === undefined ? options.jenkinsMode : options.useFullSuiteTitle;
   options.toConsole = !!options.toConsole;
   options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName === undefined ? options.jenkinsMode : options.testCaseSwitchClassnameAndName;
-  options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
-  options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy || ' ';
+  options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || (options.jenkinsMode ? '.' : ' ');
+  options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy;
   options.rootSuiteTitle = options.rootSuiteTitle || 'Root Suite';
   options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
 
