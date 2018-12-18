@@ -20,15 +20,23 @@ function configureDefaults(options) {
   options = options.reporterOptions || {};
   options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
   options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || null;
-  options.attachments = options.attachments || process.env.ATTACHMENTS || false;
+  options.attachments = deduceSetting(options.attachments, 'ATTACHMENTS', false);
+  options.jenkinsMode = deduceSetting(options.jenkinsMode, 'JENKINS_MODE', false);
   options.toConsole = !!options.toConsole;
-  options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
+  options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName === undefined ? options.jenkinsMode : options.testCaseSwitchClassnameAndName;
   options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
   options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy || ' ';
   options.rootSuiteTitle = options.rootSuiteTitle || 'Root Suite';
   options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
 
   return options;
+}
+
+function deduceSetting (setting, env, defaultVal) {
+  if (process.env[env] !== undefined) {
+    return process.env[env];
+  }
+  return setting === undefined ? defaultVal : setting;
 }
 
 function defaultSuiteTitle(suite) {
@@ -88,6 +96,16 @@ function generateProperties(options) {
     }
   }
   return properties;
+}
+
+function getJenkinsClassname (test) {
+  var parent = test.parent;
+  var titles = [];
+  while (parent) {
+    parent.title && titles.unshift(parent.title);
+    parent = parent.parent;
+  }
+  return titles.join('.');
 }
 
 /**
@@ -185,8 +203,9 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
  * @returns {object}
  */
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
+  var jenkinsMode = this._options.jenkinsMode;
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
-  var name = stripAnsi(test.fullTitle());
+  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test) : test.fullTitle());
   var classname = stripAnsi(test.title);
   var config = {
     testcase: [{
