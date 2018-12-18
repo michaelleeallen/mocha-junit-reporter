@@ -461,4 +461,61 @@ describe('mocha-junit-reporter', function() {
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
     });
   });
+
+  describe('Jenkins format', function () {
+    var suites = [
+      {
+        testsuite: {
+          title: 'Inner Suite',
+          suites: [1],
+          tests: [1]
+        },
+        pass: [ {title: 'test', fullTitle: 'Inner Suite test'} ],
+        suites: [ {
+          testsuite: {
+            title: 'Another Suite',
+            suites: [1],
+            tests: [1]
+          },
+          fail: [ {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}]
+        } ]
+      },
+    ];
+
+    it('generates Jenkins compatible classnames', function() {
+      var reporter = configureReporter({jenkinsMode: true }, suites);
+
+      expect(reporter.suites[0].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].pass[0].title);
+      expect(reporter.suites[0].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title);
+      expect(reporter.suites[1].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].suites[0].fail[0].title);
+      expect(reporter.suites[1].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
+    });
+
+    function configureReporter(options, suites) {
+      var reporter = createReporter(options);
+
+      reporter.flush = function(suites) {
+        reporter.suites = suites;
+      };
+
+      (suites || []).forEach(startSuite.bind(this, null));
+      runner.end();
+
+      return reporter;
+    }
+
+    function startSuite (parent, suite) {
+      runner.startSuite(suite.testsuite);
+      ['pass', 'fail', 'pending'].forEach(function (key) {
+        if (suite[key]) {
+          suite[key].forEach(function (test) {
+            var instance = new Test(test.fullTitle || test.title, test.title, 1);
+            instance.parent = suite.testsuite;
+            runner[key](instance, test.error);
+          });
+        }
+      });
+      (suite.suites || []).forEach(startSuite.bind(this, suite));
+    }
+  });
 });

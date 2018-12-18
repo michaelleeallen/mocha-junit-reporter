@@ -135,3 +135,4 @@ it ('should include attachment', function () {
 | rootSuiteTitle | the name for the root suite. (defaults to 'Root Suite') |
 | testsuitesTitle | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
 | attachments | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format |
+| jenkinsMode | if set to truthy value will return xml that will display nice results in Jenkins |
