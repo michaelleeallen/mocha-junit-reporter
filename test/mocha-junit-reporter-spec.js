@@ -271,6 +271,77 @@ describe('mocha-junit-reporter', function() {
 
   });
 
+  describe('when "outputs" option is specified', function() {
+    it('adds output/error lines to xml report', function() {
+      var reporter = createReporter({outputs: true});
+      var suite = {title: 'with console output and error', tests: [1]};
+      var test = new Test('has outputs', 'outputs', 1);
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.consoleOutputs = [ 'hello', 'world' ];
+      test.consoleErrors = [ 'typical diagnostic info', 'all is OK' ];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(3);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', 'hello\nworld');
+      expect(testsuites[0].testsuite[1].testcase[2]).to.have.property('system-err', 'typical diagnostic info\nall is OK');
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.include('<system-out>hello\nworld</system-out>');
+      expect(xml).to.include('<system-err>typical diagnostic info\nall is OK</system-err>');
+    });
+
+    it('does not add system-out if no outputs/errors were passed', function() {
+      var reporter = createReporter({outputs: true});
+      var suite = {title: 'with console output and error', tests: [1]};
+      var test = new Test('has outputs', 'outputs', 1);
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).not.to.include('<system-out>');
+      expect(xml).not.to.include('<system-err>');
+    });
+
+    it('does not add system-out if outputs/errors were empty', function() {
+      var reporter = createReporter({outputs: true});
+      var suite = {title: 'with console output and error', tests: [1]};
+      var test = new Test('has outputs', 'outputs', 1);
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.consoleOutputs = [];
+      test.consoleErrors = [];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).not.to.include('<system-out>');
+      expect(xml).not.to.include('<system-err>');
+    });
+  });
+
   describe('when "attachments" option is specified', function() {
     it('adds attachments to xml report', function() {
       var reporter = createReporter({attachments: true});
@@ -336,6 +407,30 @@ describe('mocha-junit-reporter', function() {
       xml = reporter.getXml(testsuites);
 
       expect(xml).to.not.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+    });
+
+    it('includes both console outputs and attachments in XML', function() {
+      var reporter = createReporter({attachments: true, outputs:true});
+      var suite = {title: 'with attachments', tests: [1]};
+      var test = new Test('has attachment', 'included attachment', 1);
+      var filePath = '/path/to/file';
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.attachments = [filePath];
+      test.consoleOutputs = [ 'first console line', 'second console line' ];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(2);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', 'first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]');
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.include('<system-out>first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]</system-out>');
     });
   });
 
