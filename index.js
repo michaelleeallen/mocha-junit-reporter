@@ -2,6 +2,7 @@
 
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
+const createStatsCollector = require('mocha/lib/stats-collector');
 var fs = require('fs');
 var path = require('path');
 var debug = require('debug')('mocha-junit-reporter');
@@ -97,6 +98,8 @@ function generateProperties(options) {
  * @param {Object} options - mocha options
  */
 function MochaJUnitReporter(runner, options) {
+  createStatsCollector(runner)
+
   this._options = configureDefaults(options);
   this._runner = runner;
   this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;

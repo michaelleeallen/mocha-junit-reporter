@@ -3,6 +3,7 @@ node_js:
   - '6'
   - '8'
   - '10'
+script: npm test
 deploy:
   provider: npm
   email: $NPM_EMAIL
@@ -10,4 +11,4 @@ deploy:
   on:
     branch: master
     tags: true
-    repo: michaelleeallen/mocha-junit-reporter
+    repo: you54f/mocha-junit-reporter
