@@ -290,6 +290,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     // at the correct index
     var _casesIndex = hasProperties ? 2 : 1;
     var _cases = suite.testsuite.slice(_casesIndex);
+    var missingProps;
 
     _suiteAttr.failures = 0;
     _suiteAttr.time = 0;
@@ -304,8 +305,17 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     });
 
     if (antMode) {
-      suite.testsuite.push({ 'system-out': [] });
-      suite.testsuite.push({ 'system-err': [] });
+      missingProps = ['system-out', 'system-err'];
+      suite.testsuite.forEach(function(item) {
+        missingProps = missingProps.filter(function(prop) {
+          return !item[prop];
+        });
+      });
+      missingProps.forEach(function(prop) {
+        var obj = {};
+        obj[prop] = [];
+        suite.testsuite.push(obj);
+      });
     }
 
     if (!_suiteAttr.skipped) {
