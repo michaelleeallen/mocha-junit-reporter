@@ -11,4 +11,4 @@ deploy:
   on:
     branch: master
     tags: true
-    repo: you54f/mocha-junit-reporter
+    repo: michaelleeallen/mocha-junit-reporter
