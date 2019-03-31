@@ -12,7 +12,8 @@ var stripAnsi = require('strip-ansi');
 module.exports = MochaJUnitReporter;
 
 // A subset of invalid characters as defined in http://www.w3.org/TR/xml/#charsets that can occur in e.g. stacktraces
-var INVALID_CHARACTERS = ['\u001b'];
+// regex lifted from https://github.com/MylesBorins/xml-sanitizer/ (licensed MIT)
+var INVALID_CHARACTERS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007f-\u0084\u0086-\u009f\uD800-\uDFFF\uFDD0-\uFDFF\uFFFF\uC008]/g; //eslint-disable-line no-control-regex
 
 function configureDefaults(options) {
   debug(options);
@@ -212,11 +213,11 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     ));
   }
   if (systemOutLines.length > 0) {
-    config.testcase.push({'system-out': systemOutLines.join('\n')});
+    config.testcase.push({'system-out': this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
   }
 
   if (this._options.outputs && (test.consoleErrors && test.consoleErrors.length > 0)) {
-    config.testcase.push({'system-err': test.consoleErrors.join('\n')});
+    config.testcase.push({'system-err': this.removeInvalidCharacters(stripAnsi(test.consoleErrors.join('\n')))});
   }
 
   if (err) {
@@ -231,7 +232,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     var failureMessage = err.stack || message;
     var failureElement = {
       _attr: {
-        message: err.message || '',
+        message: this.removeInvalidCharacters(err.message) || '',
         type: err.name || ''
       },
       _cdata: this.removeInvalidCharacters(failureMessage)
@@ -247,9 +248,10 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
  * @returns {string} without invalid characters
  */
 MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
-  return INVALID_CHARACTERS.reduce(function (text, invalidCharacter) {
-    return text.replace(new RegExp(invalidCharacter, 'g'), '');
-  }, input);
+  if (!input) {
+    return input;
+  }
+  return input.replace(INVALID_CHARACTERS_REGEX, '');
 };
 
 /**
