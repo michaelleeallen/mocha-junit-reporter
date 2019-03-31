@@ -1,7 +1,7 @@
 # JUnit Reporter for Mocha
 
-[![Build Status](https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master)](https://travis-ci.org/michaelleeallen/mocha-junit-reporter)
-[![npm](https://img.shields.io/npm/v/mocha-junit-reporter.svg?maxAge=2592000)](https://www.npmjs.com/package/mocha-junit-reporter)
+[![Build Status](travis-badge)](travis-build)
+[![npm](npm-badge)](npm-listing)
 
 Produces JUnit-style XML test results.
 
@@ -47,7 +47,7 @@ var mocha = new Mocha({
 
 You can also add properties to the report under `testsuite`. This is useful if you want your CI environment to add extra build props to the report for analytics purposes
 
-```
+```xml
 <testsuites>
   <testsuite>
     <properties>
@@ -104,10 +104,10 @@ var mocha = new Mocha({
 
 Here is an example of the XML output when using the `testCaseSwitchClassnameAndName` option:
 
-| value | XML output |
-|----------------------------------|--------|
-| `true`                           | `<testcase name="should behave like so" classname="Super Suite should behave like so">` |
-| `false` (default)                | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
+| value             | XML output |
+|-------------------|------------|
+| `true`            | `<testcase name="should behave like so" classname="Super Suite should behave like so">` |
+| `false` (default) | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
 
 You can also configure the `testsuites.name` attribute by setting `reporterOptions.testsuitesTitle` and the root suite's `name` attribute by setting `reporterOptions.rootSuiteTitle`.
 
@@ -192,3 +192,12 @@ output line 2
 | testsuitesTitle | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
 | outputs | if set to truthy value will include console output and console error output |
 | attachments | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format (after console outputs, if any) |
+| antMode | set to truthy value to return xml compatible with [Ant JUnit schema][ant-schema] |
+| antHostname | hostname to use when running in `antMode`  will default to environment `HOSTNAME` |
+
+
+[travis-badge]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master
+[travis-build]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter
+[npm-badge]: https://img.shields.io/npm/v/mocha-junit-reporter.svg?maxAge=2592000
+[npm-listing]: https://www.npmjs.com/package/mocha-junit-reporter
+[ant-schema]: http://windyroad.org/dl/Open%20Source/JUnit.xsd

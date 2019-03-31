@@ -10,6 +10,7 @@ var path = require('path');
 
 var chai = require('chai');
 var expect = chai.expect;
+var libxml = require("libxmljs");
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
 var testConsole = require('test-console');
@@ -555,5 +556,71 @@ describe('mocha-junit-reporter', function() {
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.title);
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
     });
+  });
+
+  describe('XML format', function () {
+    var suites = [
+      {testsuite:
+        {title: '', root: true, suites: [2], tests: [0]}
+      },
+      {testsuite:
+        {title: 'Inner Suite', suites: [1], tests: [1]}, pass: [
+          {title: 'test', fullTitle: 'Inner Suite test'}
+        ]
+      },
+      {testsuite:
+        {title: 'Another Suite', suites: [1], tests: [1]}, fail: [
+          {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}
+        ]
+      }
+    ];
+
+    it('generates Jenkins compatible XML when in jenkinsMode', function() {
+      var reporter = configureReporter({jenkinsMode: true }, suites);
+      var xml = reporter.getXml(reporter.suites);
+      var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
+
+      var xsdDoc = libxml.parseXml(xsd);
+      var xmlDoc = libxml.parseXml(xml);
+
+      xmlDoc.validate(xsdDoc);
+
+      expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+    });
+
+    it('generates Jenkins compatible XML when in antMode', function() {
+      var reporter = configureReporter({antMode: true }, suites);
+      var xml = reporter.getXml(reporter.suites);
+      var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
+
+      var xsdDoc = libxml.parseXml(xsd);
+      var xmlDoc = libxml.parseXml(xml);
+
+      xmlDoc.validate(xsdDoc);
+
+      expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+    });
+
+    function configureReporter(options, suites) {
+      var reporter = createReporter(options);
+
+      reporter.flush = function(suites) {
+        reporter.suites = suites;
+      };
+
+      (suites || []).forEach(function (suite) {
+        runner.startSuite(suite.testsuite);
+        ['pass', 'fail', 'pending'].forEach(function (key) {
+          if (suite[key]) {
+            suite[key].forEach(function (test) {
+              runner[key](new Test(test.fullTitle || test.title, test.title, 1), test.error);
+            });
+          }
+        });
+      });
+      runner.end();
+
+      return reporter;
+    }
   });
 });
