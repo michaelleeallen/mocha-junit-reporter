@@ -19,26 +19,68 @@ function configureDefaults(options) {
   debug(options);
   options = options || {};
   options = options.reporterOptions || {};
-  options.mochaFile = options.mochaFile || process.env.MOCHA_FILE || 'test-results.xml';
-  options.attachments = deduceSetting(options.attachments, 'ATTACHMENTS', false);
-  options.antMode = deduceSetting(options.antMode, 'ANT_MODE', false);
-  options.antHostname = deduceSetting(options.antHostname, 'ANT_HOSTNAME', process.env.HOSTNAME);
-  options.properties = options.properties || parsePropertiesFromEnv(process.env.PROPERTIES) || (options.antMode ? [] : null);
+  options.mochaFile = getSetting(options.mochaFile, 'MOCHA_FILE', 'test-results.xml');
+  options.attachments = getSetting(options.attachments, 'ATTACHMENTS', false);
+  options.antMode = getSetting(options.antMode, 'ANT_MODE', false);
+  options.jenkinsMode = getSetting(options.jenkinsMode, 'JENKINS_MODE', false);
+  options.properties = getSetting(options.properties, 'PROPERTIES', null, parsePropertiesFromEnv);
   options.toConsole = !!options.toConsole;
-  options.testCaseSwitchClassnameAndName = options.testCaseSwitchClassnameAndName || false;
-  options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
-  options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy || ' ';
   options.rootSuiteTitle = options.rootSuiteTitle || 'Root Suite';
   options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
+
+  if (options.antMode) {
+    updateOptionsForAntMode(options);
+  }
+
+  if (options.jenkinsMode) {
+    updateOptionsForJenkinsMode(options);
+  }
+
+  options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
+  options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy;
 
   return options;
 }
 
-function deduceSetting (setting, env, defaultVal) {
-  if (process.env[env] !== undefined) {
-    return process.env[env];
+function updateOptionsForAntMode(options) {
+  options.antHostname = getSetting(options.antHostname, 'ANT_HOSTNAME', process.env.HOSTNAME);
+
+  if (!options.properties) {
+    options.properties = {};
   }
-  return setting === undefined ? defaultVal : setting;
+}
+
+function updateOptionsForJenkinsMode(options) {
+  if (options.useFullSuiteTitle === undefined) {
+    options.useFullSuiteTitle = true;
+  }
+  if (options.testCaseSwitchClassnameAndName === undefined) {
+    options.testCaseSwitchClassnameAndName = true;
+  }
+  if (options.suiteTitleSeparedBy === undefined) {
+    options.suiteTitleSeparedBy = '.';
+  }
+}
+
+/**
+ * Determine an option value.
+ * 1. If `value` is specified, then use that value
+ * 2. If `key` is present in the environment, then use the environment value
+ * 3. Fall back to `defaultVal`
+ * @module mocha-junit-reporter
+ * @param {Object} value - the value from the reporter options
+ * @param {String} key - the environment variable to check
+ * @param {Object} defaultVal - the fallback value
+ */
+function getSetting(value, key, defaultVal, transform) {
+  if (value !== undefined) {
+    return value;
+  }
+  if (process.env[key] !== undefined) {
+    var envVal = process.env[key];
+    return (typeof transform === 'function') ? transform(envVal) : envVal;
+  }
+  return defaultVal;
 }
 
 function defaultSuiteTitle(suite) {
@@ -69,18 +111,15 @@ function isInvalidSuite(suite) {
 }
 
 function parsePropertiesFromEnv(envValue) {
-  var properties = null;
-
   if (envValue) {
-    properties = {};
-    var propertiesArray = envValue.split(',');
-    for (var i = 0; i < propertiesArray.length; i++) {
-      var propertyArgs = propertiesArray[i].split(':');
-      properties[propertyArgs[0]] = propertyArgs[1];
-    }
+    return envValue.split(',').reduce(function(properties, prop) {
+      var property = prop.split(':');
+      properties[property[0]] = property[1];
+      return properties;
+    });
   }
 
-  return properties;
+  return null;
 }
 
 function generateProperties(options) {
@@ -98,6 +137,16 @@ function generateProperties(options) {
     }
   }
   return properties;
+}
+
+function getJenkinsClassname (test) {
+  var parent = test.parent;
+  var titles = [];
+  while (parent) {
+    parent.title && titles.unshift(parent.title);
+    parent = parent.parent;
+  }
+  return titles.join('.');
 }
 
 /**
@@ -204,8 +253,9 @@ MochaJUnitReporter.prototype.antID = 0;
  * @returns {object}
  */
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
+  var jenkinsMode = this._options.jenkinsMode;
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
-  var name = stripAnsi(test.fullTitle());
+  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test) : test.fullTitle());
   var classname = stripAnsi(test.title);
   var config = {
     testcase: [{

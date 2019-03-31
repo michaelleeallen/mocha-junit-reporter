@@ -269,7 +269,6 @@ describe('mocha-junit-reporter', function() {
 
       return reporter;
     }
-
   });
 
   describe('when "outputs" option is specified', function() {
@@ -599,6 +598,38 @@ describe('mocha-junit-reporter', function() {
       xmlDoc.validate(xsdDoc);
 
       expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+    });
+
+    describe('Jenkins format', function () {
+      var suites = [
+        {
+          testsuite: {
+            title: 'Inner Suite',
+            suites: [1],
+            tests: [1]
+          },
+          pass: [ {title: 'test', fullTitle: 'Inner Suite test'} ],
+          suites: [ {
+            testsuite: {
+              title: 'Another Suite',
+              suites: [1],
+              tests: [1]
+            },
+            fail: [ {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}]
+          } ]
+        },
+      ];
+
+      it('generates Jenkins compatible classnames and suite name', function() {
+        var reporter = configureReporter({jenkinsMode: true }, suites);
+
+        expect(reporter.suites[0].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title);
+        expect(reporter.suites[0].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].pass[0].title);
+        expect(reporter.suites[0].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title);
+        expect(reporter.suites[1].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
+        expect(reporter.suites[1].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].suites[0].fail[0].title);
+        expect(reporter.suites[1].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
+      });
     });
 
     function configureReporter(options, suites) {

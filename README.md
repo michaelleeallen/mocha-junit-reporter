@@ -194,7 +194,7 @@ output line 2
 | attachments | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format (after console outputs, if any) |
 | antMode | set to truthy value to return xml compatible with [Ant JUnit schema][ant-schema] |
 | antHostname | hostname to use when running in `antMode`  will default to environment `HOSTNAME` |
-
+| jenkinsMode | if set to truthy value will return xml that will display nice results in Jenkins |
 
 [travis-badge]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master
 [travis-build]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter
