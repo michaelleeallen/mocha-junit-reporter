@@ -198,12 +198,25 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     }]
   };
 
+  // We need to merge console.logs and attachments into one <system-out> -
+  //  see JUnit schema (only accepts 1 <system-out> per test).
+  var systemOutLines = [];
+  if (this._options.outputs && (test.consoleOutputs && test.consoleOutputs.length > 0)) {
+    systemOutLines = systemOutLines.concat(test.consoleOutputs);
+  }
   if (this._options.attachments && test.attachments && test.attachments.length > 0) {
-    config.testcase.push({'system-out': test.attachments.map(
+    systemOutLines = systemOutLines.concat(test.attachments.map(
       function (file) {
         return '[[ATTACHMENT|' + file + ']]';
       }
-    ).join('\n')});
+    ));
+  }
+  if (systemOutLines.length > 0) {
+    config.testcase.push({'system-out': systemOutLines.join('\n')});
+  }
+
+  if (this._options.outputs && (test.consoleErrors && test.consoleErrors.length > 0)) {
+    config.testcase.push({'system-err': test.consoleErrors.join('\n')});
   }
 
   if (err) {
