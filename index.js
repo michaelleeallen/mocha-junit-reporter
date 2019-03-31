@@ -123,20 +123,11 @@ function parsePropertiesFromEnv(envValue) {
 }
 
 function generateProperties(options) {
-  var properties = [];
-  for (var propertyName in options.properties) {
-    if (options.properties.hasOwnProperty(propertyName)) {
-      properties.push({
-        property: {
-          _attr: {
-            name: propertyName,
-            value: options.properties[propertyName]
-          }
-        }
-      });
-    }
-  }
-  return properties;
+  return Object.keys(options.properties).reduce(function(properties, name) {
+    var value = options.properties[name];
+    properties.push({ property: { _attr: { name: name, value: value } } });
+    return properties;
+  }, []);
 }
 
 function getJenkinsClassname (test) {
@@ -159,6 +150,7 @@ function MochaJUnitReporter(runner, options) {
   this._options = configureDefaults(options);
   this._runner = runner;
   this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;
+  this._antId = 0;
 
   var testsuites = [];
 
@@ -212,7 +204,6 @@ function MochaJUnitReporter(runner, options) {
  */
 MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
   var antMode = this._options.antMode;
-  var hostname = this._options.antHostname;
 
   var _attr =  {
     name: this._generateSuiteTitle(suite),
@@ -235,16 +226,14 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
 
   if (antMode) {
     _attr.package = _attr.name;
-    _attr.hostname = hostname;
-    _attr.id = this.antID;
+    _attr.hostname = this._options.antHostname;
+    _attr.id = this._antID;
     _attr.errors = 0;
-    this.antID += 1;
+    this._antID += 1;
   }
 
   return testSuite;
 };
-
-MochaJUnitReporter.prototype.antID = 0;
 
 /**
  * Produces an xml config for a given test case.
@@ -257,7 +246,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
   var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test) : test.fullTitle());
   var classname = stripAnsi(test.title);
-  var config = {
+  var testcase = {
     testcase: [{
       _attr: {
         name: flipClassAndName ? classname : name,
@@ -281,11 +270,11 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     ));
   }
   if (systemOutLines.length > 0) {
-    config.testcase.push({'system-out': this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
+    testcase.testcase.push({'system-out': this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
   }
 
   if (this._options.outputs && (test.consoleErrors && test.consoleErrors.length > 0)) {
-    config.testcase.push({'system-err': this.removeInvalidCharacters(stripAnsi(test.consoleErrors.join('\n')))});
+    testcase.testcase.push({'system-err': this.removeInvalidCharacters(stripAnsi(test.consoleErrors.join('\n')))});
   }
 
   if (err) {
@@ -306,9 +295,9 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       _cdata: this.removeInvalidCharacters(failureMessage)
     };
 
-    config.testcase.push({failure: failureElement});
+    testcase.testcase.push({failure: failureElement});
   }
-  return config;
+  return testcase;
 };
 
 /**
@@ -346,13 +335,13 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var totalSuitesTime = 0;
   var totalTests = 0;
   var stats = this._runner.stats;
-  var hasProperties = !!this._options.properties;
   var antMode = this._options.antMode;
+  var hasProperties = (!!this._options.properties) || antMode;
 
   testsuites.forEach(function(suite) {
     var _suiteAttr = suite.testsuite[0]._attr;
-    // properties are added before test cases so we want to make sure that we are grabbing test cases
-    // at the correct index
+    // testsuite is an array: [attrs, properties?, testcase, testcase, …]
+    // we want to make sure that we are grabbing test cases at the correct index
     var _casesIndex = hasProperties ? 2 : 1;
     var _cases = suite.testsuite.slice(_casesIndex);
     var missingProps;
