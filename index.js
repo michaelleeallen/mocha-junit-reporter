@@ -54,6 +54,7 @@ function updateOptionsForJenkinsMode(options) {
   if (options.useFullSuiteTitle === undefined) {
     options.useFullSuiteTitle = true;
   }
+  debug('jenkins mode - testCaseSwitchClassnameAndName', options.testCaseSwitchClassnameAndName);
   if (options.testCaseSwitchClassnameAndName === undefined) {
     options.testCaseSwitchClassnameAndName = true;
   }
@@ -112,25 +113,31 @@ function isInvalidSuite(suite) {
 
 function parsePropertiesFromEnv(envValue) {
   if (envValue) {
+    debug('Parsing from env', envValue);
     return envValue.split(',').reduce(function(properties, prop) {
       var property = prop.split(':');
       properties[property[0]] = property[1];
       return properties;
-    });
+    }, []);
   }
 
   return null;
 }
 
 function generateProperties(options) {
-  return Object.keys(options.properties).reduce(function(properties, name) {
-    var value = options.properties[name];
+  var props = options.properties;
+  if (!props) {
+    return [];
+  }
+  return Object.keys(props).reduce(function(properties, name) {
+    var value = props[name];
     properties.push({ property: { _attr: { name: name, value: value } } });
     return properties;
   }, []);
 }
 
 function getJenkinsClassname (test) {
+  debug('Building jenkins classname for', test);
   var parent = test.parent;
   var titles = [];
   while (parent) {
@@ -227,9 +234,9 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
   if (antMode) {
     _attr.package = _attr.name;
     _attr.hostname = this._options.antHostname;
-    _attr.id = this._antID;
+    _attr.id = this._antId;
     _attr.errors = 0;
-    this._antID += 1;
+    this._antId += 1;
   }
 
   return testSuite;
