@@ -65,21 +65,22 @@ function updateOptionsForJenkinsMode(options) {
 
 /**
  * Determine an option value.
- * 1. If `value` is specified, then use that value
- * 2. If `key` is present in the environment, then use the environment value
+ * 1. If `key` is present in the environment, then use the environment value
+ * 2. If `value` is specified, then use that value
  * 3. Fall back to `defaultVal`
  * @module mocha-junit-reporter
  * @param {Object} value - the value from the reporter options
  * @param {String} key - the environment variable to check
  * @param {Object} defaultVal - the fallback value
+ * @param {function} transform - a transformation function to be used when loading values from the environment
  */
 function getSetting(value, key, defaultVal, transform) {
-  if (value !== undefined) {
-    return value;
-  }
   if (process.env[key] !== undefined) {
     var envVal = process.env[key];
     return (typeof transform === 'function') ? transform(envVal) : envVal;
+  }
+  if (value !== undefined) {
+    return value;
   }
   return defaultVal;
 }
