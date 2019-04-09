@@ -587,7 +587,7 @@ describe('mocha-junit-reporter', function() {
       expect(xmlDoc.validationErrors).to.be.deep.equal([]);
     });
 
-    it('generates Jenkins compatible XML when in antMode', function() {
+    it('generates Ant compatible XML when in antMode', function() {
       var reporter = configureReporter({antMode: true }, suites);
       var xml = reporter.getXml(reporter.suites);
       var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
@@ -640,19 +640,24 @@ describe('mocha-junit-reporter', function() {
         reporter.suites = suites;
       };
 
-      (suites || []).forEach(function (suite) {
-        runner.startSuite(suite.testsuite);
-        ['pass', 'fail', 'pending'].forEach(function (key) {
-          if (suite[key]) {
-            suite[key].forEach(function (test) {
-              runner[key](new Test(test.fullTitle || test.title, test.title, 1), test.error);
-            });
-          }
-        });
-      });
+      (suites || []).forEach(startSuite.bind(this, null));
       runner.end();
 
       return reporter;
+    }
+
+    function startSuite (parent, suite) {
+      runner.startSuite(suite.testsuite);
+      ['pass', 'fail', 'pending'].forEach(function (key) {
+        if (suite[key]) {
+          suite[key].forEach(function (test) {
+            var instance = new Test(test.fullTitle || test.title, test.title, 1);
+            instance.parent = suite.testsuite;
+            runner[key](instance, test.error);
+          });
+        }
+      });
+      (suite.suites || []).forEach(startSuite.bind(this, suite));
     }
   });
 });
