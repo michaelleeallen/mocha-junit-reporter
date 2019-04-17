@@ -1,7 +1,7 @@
 # JUnit Reporter for Mocha
 
-[![Build Status](travis-badge)](travis-build)
-[![npm](npm-badge)](npm-listing)
+[![Build Status][travis-badge]][travis-build]
+[![npm][npm-badge]][npm-listing]
 
 Produces JUnit-style XML test results.
 
