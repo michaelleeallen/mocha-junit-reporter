@@ -1,6 +1,6 @@
 {
   "name": "mocha-junit-reporter",
-  "version": "1.18.0",
+  "version": "1.22.0",
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "chai-xml": "^0.3.0",
     "eslint": "^4.0.0",
     "mocha": "^6.0.0",
+    "libxmljs": "^0.19.5",
     "test-console": "^1.0.0"
   },
   "dependencies": {

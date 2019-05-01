@@ -10,6 +10,7 @@ var path = require('path');
 
 var chai = require('chai');
 var expect = chai.expect;
+var libxml = require("libxmljs");
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
 var testConsole = require('test-console');
@@ -268,7 +269,77 @@ describe('mocha-junit-reporter', function() {
 
       return reporter;
     }
+  });
 
+  describe('when "outputs" option is specified', function() {
+    it('adds output/error lines to xml report', function() {
+      var reporter = createReporter({outputs: true});
+      var suite = {title: 'with console output and error', tests: [1]};
+      var test = new Test('has outputs', 'outputs', 1);
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.consoleOutputs = [ 'hello', 'world' ];
+      test.consoleErrors = [ 'typical diagnostic info', 'all is OK' ];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(3);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', 'hello\nworld');
+      expect(testsuites[0].testsuite[1].testcase[2]).to.have.property('system-err', 'typical diagnostic info\nall is OK');
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.include('<system-out>hello\nworld</system-out>');
+      expect(xml).to.include('<system-err>typical diagnostic info\nall is OK</system-err>');
+    });
+
+    it('does not add system-out if no outputs/errors were passed', function() {
+      var reporter = createReporter({outputs: true});
+      var suite = {title: 'with console output and error', tests: [1]};
+      var test = new Test('has outputs', 'outputs', 1);
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).not.to.include('<system-out>');
+      expect(xml).not.to.include('<system-err>');
+    });
+
+    it('does not add system-out if outputs/errors were empty', function() {
+      var reporter = createReporter({outputs: true});
+      var suite = {title: 'with console output and error', tests: [1]};
+      var test = new Test('has outputs', 'outputs', 1);
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.consoleOutputs = [];
+      test.consoleErrors = [];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).not.to.include('<system-out>');
+      expect(xml).not.to.include('<system-err>');
+    });
   });
 
   describe('when "attachments" option is specified', function() {
@@ -336,6 +407,30 @@ describe('mocha-junit-reporter', function() {
       xml = reporter.getXml(testsuites);
 
       expect(xml).to.not.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+    });
+
+    it('includes both console outputs and attachments in XML', function() {
+      var reporter = createReporter({attachments: true, outputs:true});
+      var suite = {title: 'with attachments', tests: [1]};
+      var test = new Test('has attachment', 'included attachment', 1);
+      var filePath = '/path/to/file';
+      var testsuites;
+      var xml;
+      runner.startSuite(suite);
+      test.attachments = [filePath];
+      test.consoleOutputs = [ 'first console line', 'second console line' ];
+      runner.pass(test);
+      reporter.flush = function(suites) {
+        testsuites = suites;
+      };
+      runner.end();
+      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(testsuites[0].testsuite[1].testcase).to.have.length(2);
+      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', 'first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]');
+      xml = reporter.getXml(testsuites);
+
+      expect(xml).to.include('<system-out>first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]</system-out>');
     });
   });
 
@@ -460,5 +555,109 @@ describe('mocha-junit-reporter', function() {
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.title);
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
     });
+  });
+
+  describe('XML format', function () {
+    var suites = [
+      {testsuite:
+        {title: '', root: true, suites: [2], tests: [0]}
+      },
+      {testsuite:
+        {title: 'Inner Suite', suites: [1], tests: [1]}, pass: [
+          {title: 'test', fullTitle: 'Inner Suite test'}
+        ]
+      },
+      {testsuite:
+        {title: 'Another Suite', suites: [1], tests: [1]}, fail: [
+          {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}
+        ]
+      }
+    ];
+
+    it('generates Jenkins compatible XML when in jenkinsMode', function() {
+      var reporter = configureReporter({jenkinsMode: true }, suites);
+      var xml = reporter.getXml(reporter.suites);
+      var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
+
+      var xsdDoc = libxml.parseXml(xsd);
+      var xmlDoc = libxml.parseXml(xml);
+
+      xmlDoc.validate(xsdDoc);
+
+      expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+    });
+
+    it('generates Ant compatible XML when in antMode', function() {
+      var reporter = configureReporter({antMode: true }, suites);
+      var xml = reporter.getXml(reporter.suites);
+      var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
+
+      var xsdDoc = libxml.parseXml(xsd);
+      var xmlDoc = libxml.parseXml(xml);
+
+      xmlDoc.validate(xsdDoc);
+
+      expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+    });
+
+    describe('Jenkins format', function () {
+      var suites = [
+        {
+          testsuite: {
+            title: 'Inner Suite',
+            suites: [1],
+            tests: [1]
+          },
+          pass: [ {title: 'test', fullTitle: 'Inner Suite test'} ],
+          suites: [ {
+            testsuite: {
+              title: 'Another Suite',
+              suites: [1],
+              tests: [1]
+            },
+            fail: [ {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}]
+          } ]
+        },
+      ];
+
+      it('generates Jenkins compatible classnames and suite name', function() {
+        var reporter = configureReporter({jenkinsMode: true}, suites);
+
+        debug('testcase', reporter.suites[0].testsuite[1].testcase[0])
+        expect(reporter.suites[0].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title);
+        expect(reporter.suites[0].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].pass[0].title);
+        expect(reporter.suites[0].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title);
+        expect(reporter.suites[1].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
+        expect(reporter.suites[1].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].suites[0].fail[0].title);
+        expect(reporter.suites[1].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
+      });
+    });
+
+    function configureReporter(options, suites) {
+      var reporter = createReporter(options);
+
+      reporter.flush = function(suites) {
+        reporter.suites = suites;
+      };
+
+      (suites || []).forEach(startSuite.bind(this, null));
+      runner.end();
+
+      return reporter;
+    }
+
+    function startSuite (parent, suite) {
+      runner.startSuite(suite.testsuite);
+      ['pass', 'fail', 'pending'].forEach(function (key) {
+        if (suite[key]) {
+          suite[key].forEach(function (test) {
+            var instance = new Test(test.fullTitle || test.title, test.title, 1);
+            instance.parent = suite.testsuite;
+            runner[key](instance, test.error);
+          });
+        }
+      });
+      (suite.suites || []).forEach(startSuite.bind(this, suite));
+    }
   });
 });
