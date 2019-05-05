@@ -2,7 +2,6 @@
 
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
-const createStatsCollector = require('mocha/lib/stats-collector');
 var fs = require('fs');
 var path = require('path');
 var debug = require('debug')('mocha-junit-reporter');
@@ -10,6 +9,23 @@ var mkdirp = require('mkdirp');
 var md5 = require('md5');
 var stripAnsi = require('strip-ansi');
 
+var createStatsCollector;
+var mocha6plus;
+
+try {
+  var json = JSON.parse(
+    fs.readFileSync("./node_modules/mocha/package.json", "utf8")
+  );
+  version = json.version;
+  if (version >= "6") {
+    createStatsCollector = require("mocha/lib/stats-collector");
+    mocha6plus = true;
+  } else {
+    mocha6plus = false;
+  }
+} catch (e) {
+  console.warn("Couldn't determine Mocha version");
+}
 module.exports = MochaJUnitReporter;
 
 // A subset of invalid characters as defined in http://www.w3.org/TR/xml/#charsets that can occur in e.g. stacktraces
@@ -156,8 +172,9 @@ function getJenkinsClassname (test) {
  * @param {Object} options - mocha options
  */
 function MochaJUnitReporter(runner, options) {
-  createStatsCollector(runner)
-
+  if (mocha6plus) {
+    createStatsCollector(runner);
+  }
   this._options = configureDefaults(options);
   this._runner = runner;
   this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;
