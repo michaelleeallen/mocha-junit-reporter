@@ -16,7 +16,7 @@ try {
   var json = JSON.parse(
     fs.readFileSync("./node_modules/mocha/package.json", "utf8")
   );
-  version = json.version;
+  var version = json.version;
   if (version >= "6") {
     createStatsCollector = require("mocha/lib/stats-collector");
     mocha6plus = true;
