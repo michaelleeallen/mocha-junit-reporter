@@ -14,7 +14,7 @@ var mocha6plus;
 
 try {
   var json = JSON.parse(
-    fs.readFileSync("./node_modules/mocha/package.json", "utf8")
+    fs.readFileSync(path.dirname(require.resolve('mocha')) + "/package.json", "utf8")
   );
   var version = json.version;
   if (version >= "6") {
@@ -24,6 +24,7 @@ try {
     mocha6plus = false;
   }
 } catch (e) {
+  // eslint-disable-next-line no-console
   console.warn("Couldn't determine Mocha version");
 }
 module.exports = MochaJUnitReporter;

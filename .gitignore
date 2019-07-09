@@ -1,4 +1,5 @@
 .c9/
+.idea/
 node_modules/
 test/subdir/
 test/*.xml
