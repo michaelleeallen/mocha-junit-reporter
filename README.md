@@ -104,8 +104,8 @@ var mocha = new Mocha({
 
 Here is an example of the XML output when using the `testCaseSwitchClassnameAndName` option:
 
-| value             | XML output |
-|-------------------|------------|
+| value             | XML output                                                                              |
+| ----------------- | --------------------------------------------------------------------------------------- |
 | `true`            | `<testcase name="should behave like so" classname="Super Suite should behave like so">` |
 | `false` (default) | `<testcase name="Super Suite should behave like so" classname="should behave like so">` |
 
@@ -179,22 +179,22 @@ output line 2
 
 ### Full configuration options
 
-| Parameter | Effect |
-| --------- | ------ |
-| mochaFile | configures the file to write reports to |
-| includePending | if set to a truthy value pending tests will be included in the report |
-| properties | a hash of additional properties to add to each test suite |
-| toConsole | if set to a truthy value the produced XML will be logged to the console |
-| useFullSuiteTitle | if set to a truthy value nested suites' titles will show the suite lineage |
-| suiteTitleSeparedBy | the character to use to separate nested suite titles. (defaults to ' ') |
-| testCaseSwitchClassnameAndName | set to a truthy value to switch name and classname values |
-| rootSuiteTitle | the name for the root suite. (defaults to 'Root Suite') |
-| testsuitesTitle | the name for the `testsuites` tag (defaults to 'Mocha Tests') |
-| outputs | if set to truthy value will include console output and console error output |
-| attachments | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format (after console outputs, if any) |
-| antMode | set to truthy value to return xml compatible with [Ant JUnit schema][ant-schema] |
-| antHostname | hostname to use when running in `antMode`  will default to environment `HOSTNAME` |
-| jenkinsMode | if set to truthy value will return xml that will display nice results in Jenkins |
+| Parameter                      | Default                | Effect                                                                                                                  |
+| ------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| mochaFile                      | `test-results.xml`     | configures the file to write reports to                                                                                 |
+| includePending                 | `false`                | if set to a truthy value pending tests will be included in the report                                                   |
+| properties                     | `null`                 | a hash of additional properties to add to each test suite                                                               |
+| toConsole                      | `false`                | if set to a truthy value the produced XML will be logged to the console                                                 |
+| useFullSuiteTitle              | `false`                | if set to a truthy value nested suites' titles will show the suite lineage                                              |
+| suiteTitleSeparedBy            | ` ` (space)            | the character to use to separate nested suite titles. (defaults to ' ')                                                 |
+| testCaseSwitchClassnameAndName | `false`                | set to a truthy value to switch name and classname values                                                               |
+| rootSuiteTitle                 | `Root Suite`           | the name for the root suite. (defaults to 'Root Suite')                                                                 |
+| testsuitesTitle                | `Mocha Tests`          | the name for the `testsuites` tag (defaults to 'Mocha Tests')                                                           |
+| outputs                        | `false`                | if set to truthy value will include console output and console error output                                             |
+| attachments                    | `false`                | if set to truthy value will attach files to report in `JUnit Attachments Plugin` format (after console outputs, if any) |
+| antMode                        | `false`                | set to truthy value to return xml compatible with [Ant JUnit schema][ant-schema]                                        |
+| antHostname                    | `process.env.HOSTNAME` | hostname to use when running in `antMode`  will default to environment `HOSTNAME`                                       |
+| jenkinsMode                    | `false`                | if set to truthy value will return xml that will display nice results in Jenkins                                        |
 
 [travis-badge]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master
 [travis-build]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter
