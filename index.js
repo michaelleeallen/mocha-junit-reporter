@@ -155,7 +155,7 @@ function generateProperties(options) {
   }, []);
 }
 
-function getJenkinsClassname (test) {
+function getJenkinsClassname (test, options) {
   debug('Building jenkins classname for', test);
   var parent = test.parent;
   var titles = [];
@@ -163,7 +163,7 @@ function getJenkinsClassname (test) {
     parent.title && titles.unshift(parent.title);
     parent = parent.parent;
   }
-  return titles.join('.');
+  return titles.join(options.suiteTitleSeparatedBy);
 }
 
 /**
@@ -273,7 +273,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var jenkinsMode = this._options.jenkinsMode;
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
-  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test) : test.fullTitle());
+  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test, this._options) : test.fullTitle());
   var classname = stripAnsi(test.title);
   var testcase = {
     testcase: [{
