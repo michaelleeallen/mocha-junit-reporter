@@ -195,6 +195,7 @@ output line 2
 | antMode | set to truthy value to return xml compatible with [Ant JUnit schema][ant-schema] |
 | antHostname | hostname to use when running in `antMode`  will default to environment `HOSTNAME` |
 | jenkinsMode | if set to truthy value will return xml that will display nice results in Jenkins |
+| jenkinsClassnamePrefix | adds a prefix to classname. Useful for grouping tests in packages. |
 
 [travis-badge]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master
 [travis-build]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter
