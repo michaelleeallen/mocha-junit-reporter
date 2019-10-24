@@ -318,7 +318,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     var failureMessage = err.stack || message;
     var failureElement = {
       _attr: {
-        message: this.removeInvalidCharacters(err.message) || '',
+        message: this.removeInvalidCharacters(message) || '',
         type: err.name || ''
       },
       _cdata: this.removeInvalidCharacters(failureMessage)
