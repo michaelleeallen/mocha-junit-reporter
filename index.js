@@ -33,31 +33,44 @@ module.exports = MochaJUnitReporter;
 // regex lifted from https://github.com/MylesBorins/xml-sanitizer/ (licensed MIT)
 var INVALID_CHARACTERS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007f-\u0084\u0086-\u009f\uD800-\uDFFF\uFDD0-\uFDFF\uFFFF\uC008]/g; //eslint-disable-line no-control-regex
 
+function findReporterOptions(options) {
+  if (!options) {
+    return {};
+  }
+  if (!mocha6plus) {
+    return options.reporterOptions || {};
+  }
+  return Object.keys(options).filter(function(key) { return key.indexOf('reporterOptions.') === 0; })
+    .reduce(function(reporterOptions, key) {
+      reporterOptions[key.substring('reporterOptions.'.length)] = options[key];
+      return reporterOptions;
+    }, {});
+}
+
 function configureDefaults(options) {
-  debug(options);
-  options = options || {};
-  options = options.reporterOptions || {};
-  options.mochaFile = getSetting(options.mochaFile, 'MOCHA_FILE', 'test-results.xml');
-  options.attachments = getSetting(options.attachments, 'ATTACHMENTS', false);
-  options.antMode = getSetting(options.antMode, 'ANT_MODE', false);
-  options.jenkinsMode = getSetting(options.jenkinsMode, 'JENKINS_MODE', false);
-  options.properties = getSetting(options.properties, 'PROPERTIES', null, parsePropertiesFromEnv);
-  options.toConsole = !!options.toConsole;
-  options.rootSuiteTitle = options.rootSuiteTitle || 'Root Suite';
-  options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
+  var config = findReporterOptions(options);
+  debug('options', config);
+  config.mochaFile = getSetting(config.mochaFile, 'MOCHA_FILE', 'test-results.xml');
+  config.attachments = getSetting(config.attachments, 'ATTACHMENTS', false);
+  config.antMode = getSetting(config.antMode, 'ANT_MODE', false);
+  config.jenkinsMode = getSetting(config.jenkinsMode, 'JENKINS_MODE', false);
+  config.properties = getSetting(config.properties, 'PROPERTIES', null, parsePropertiesFromEnv);
+  config.toConsole = !!config.toConsole;
+  config.rootSuiteTitle = config.rootSuiteTitle || 'Root Suite';
+  config.testsuitesTitle = config.testsuitesTitle || 'Mocha Tests';
 
-  if (options.antMode) {
-    updateOptionsForAntMode(options);
+  if (config.antMode) {
+    updateOptionsForAntMode(config);
   }
 
-  if (options.jenkinsMode) {
-    updateOptionsForJenkinsMode(options);
+  if (config.jenkinsMode) {
+    updateOptionsForJenkinsMode(config);
   }
 
-  options.suiteTitleSeparedBy = options.suiteTitleSeparedBy || ' ';
-  options.suiteTitleSeparatedBy = options.suiteTitleSeparatedBy || options.suiteTitleSeparedBy;
+  config.suiteTitleSeparedBy = config.suiteTitleSeparedBy || ' ';
+  config.suiteTitleSeparatedBy = config.suiteTitleSeparatedBy || config.suiteTitleSeparedBy;
 
-  return options;
+  return config;
 }
 
 function updateOptionsForAntMode(options) {
