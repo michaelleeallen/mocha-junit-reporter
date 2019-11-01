@@ -375,17 +375,20 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     var _cases = suite.testsuite.slice(_casesIndex);
     var missingProps;
 
-    _suiteAttr.failures = 0;
     _suiteAttr.time = 0;
+    _suiteAttr.failures = 0;
     _suiteAttr.skipped = 0;
 
+    var suiteTime = 0;
     _cases.forEach(function(testcase) {
       var lastNode = testcase.testcase[testcase.testcase.length - 1];
 
       _suiteAttr.skipped += Number('skipped' in lastNode);
       _suiteAttr.failures += Number('failure' in lastNode);
-      _suiteAttr.time += testcase.testcase[0]._attr.time;
+      suiteTime += testcase.testcase[0]._attr.time;
+      testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(4);
     });
+    _suiteAttr.time = suiteTime.toFixed(4);
 
     if (antMode) {
       missingProps = ['system-out', 'system-err'];
@@ -404,8 +407,8 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     if (!_suiteAttr.skipped) {
       delete _suiteAttr.skipped;
     }
-
-    totalSuitesTime += _suiteAttr.time;
+    
+    totalSuitesTime += suiteTime;
     totalTests += _suiteAttr.tests;
   });
 
@@ -414,7 +417,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     var rootSuite = {
       _attr: {
         name: this._options.testsuitesTitle,
-        time: totalSuitesTime,
+        time: totalSuitesTime.toFixed(4),
         tests: totalTests,
         failures: stats.failures
       }
