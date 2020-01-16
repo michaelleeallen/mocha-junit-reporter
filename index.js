@@ -34,12 +34,21 @@ module.exports = MochaJUnitReporter;
 var INVALID_CHARACTERS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007f-\u0084\u0086-\u009f\uD800-\uDFFF\uFDD0-\uFDFF\uFFFF\uC008]/g; //eslint-disable-line no-control-regex
 
 function findReporterOptions(options) {
+  debug('Checking for options in', options);
   if (!options) {
+    debug('No options provided');
     return {};
   }
   if (!mocha6plus) {
+    debug('Options for pre mocha@6');
     return options.reporterOptions || {};
   }
+  if (options.reporterOptions) {
+    debug('Command-line options for mocha@6+');
+    return options.reporterOptions;
+  }
+  // this is require to handle .mocharc.js files
+  debug('Looking for .mocharc.js options');
   return Object.keys(options).filter(function(key) { return key.indexOf('reporterOptions.') === 0; })
     .reduce(function(reporterOptions, key) {
       reporterOptions[key.substring('reporterOptions.'.length)] = options[key];
@@ -420,7 +429,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     if (!_suiteAttr.skipped) {
       delete _suiteAttr.skipped;
     }
-    
+
     totalSuitesTime += suiteTime;
     totalTests += _suiteAttr.tests;
   });
