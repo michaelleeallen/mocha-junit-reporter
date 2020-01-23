@@ -337,7 +337,10 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     } else {
       message = '';
     }
-    var failureMessage = err.stack || message;
+    var diff = !Base.hideDiff && Base.showDiff(err)
+      ? '\n' + Base.generateDiff(err.actual, err.expected)
+      : '';
+    var failureMessage = (err.stack || message) + diff;
     var failureElement = {
       _attr: {
         message: this.removeInvalidCharacters(message) || '',
