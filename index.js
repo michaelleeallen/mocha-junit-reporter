@@ -337,7 +337,10 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     } else {
       message = '';
     }
-    var diff = !Base.hideDiff && Base.showDiff(err)
+    var diff = !Base.hideDiff
+        && typeof Base.showDiff === 'function'
+        && typeof Base.generateDiff === 'function'
+        && Base.showDiff(err)
       ? '\n' + Base.generateDiff(err.actual, err.expected)
       : '';
     var failureMessage = (err.stack || message) + diff;
