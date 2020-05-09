@@ -9,6 +9,10 @@ var mkdirp = require('mkdirp');
 var md5 = require('md5');
 var stripAnsi = require('strip-ansi');
 
+// Save timer references so that times are correct even if Date is stubbed.
+// See https://github.com/mochajs/mocha/issues/237
+var Date = global.Date;
+
 var createStatsCollector;
 var mocha6plus;
 
@@ -201,6 +205,7 @@ function MochaJUnitReporter(runner, options) {
   this._runner = runner;
   this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;
   this._antId = 0;
+  this._Date = (options || {}).Date || Date;
 
   var testsuites = [];
   this._testsuites = testsuites;
@@ -220,10 +225,30 @@ function MochaJUnitReporter(runner, options) {
     }
   }.bind(this));
 
-  this._runner.on('suite', function(suite) {
+  this._onSuiteBegin = function(suite) {
     if (!isInvalidSuite(suite)) {
       testsuites.push(this.getTestsuiteData(suite));
     }
+  };
+
+  this._runner.on('suite', function(suite) {
+    // allow tests to mock _onSuiteBegin
+    return this._onSuiteBegin(suite);
+  }.bind(this));
+
+  this._onSuiteEnd = function(suite) {
+    if (!isInvalidSuite(suite)) {
+      var testsuite = lastSuite();
+      if (testsuite) {
+        var start = testsuite[0]._attr.timestamp;
+        testsuite[0]._attr.time = this._Date.now() - start;
+      }
+    }
+  };
+
+  this._runner.on('suite end', function(suite) {
+    // allow tests to mock _onSuiteEnd
+    return this._onSuiteEnd(suite);
   }.bind(this));
 
   this._runner.on('pass', function(test) {
@@ -258,7 +283,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
 
   var _attr =  {
     name: this._generateSuiteTitle(suite),
-    timestamp: new Date().toISOString().slice(0,-5),
+    timestamp: this._Date.now(),
     tests: suite.tests.length
   };
   var testSuite = { testsuite: [ { _attr: _attr } ] };
@@ -383,11 +408,11 @@ MochaJUnitReporter.prototype.flush = function(testsuites){
  * @returns {string}
  */
 MochaJUnitReporter.prototype.getXml = function(testsuites) {
-  var totalSuitesTime = 0;
   var totalTests = 0;
   var stats = this._runner.stats;
   var antMode = this._options.antMode;
   var hasProperties = (!!this._options.properties) || antMode;
+  var Date = this._Date;
 
   testsuites.forEach(function(suite) {
     var _suiteAttr = suite.testsuite[0]._attr;
@@ -397,20 +422,21 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     var _cases = suite.testsuite.slice(_casesIndex);
     var missingProps;
 
-    _suiteAttr.time = 0;
+    // suiteTime has unrounded time as a Number of milliseconds
+    var suiteTime = _suiteAttr.time;
+
+    _suiteAttr.time = (suiteTime / 1000 || 0).toFixed(4);
+    _suiteAttr.timestamp = new Date(_suiteAttr.timestamp).toISOString().slice(0, -5);
     _suiteAttr.failures = 0;
     _suiteAttr.skipped = 0;
 
-    var suiteTime = 0;
     _cases.forEach(function(testcase) {
       var lastNode = testcase.testcase[testcase.testcase.length - 1];
 
       _suiteAttr.skipped += Number('skipped' in lastNode);
       _suiteAttr.failures += Number('failure' in lastNode);
-      suiteTime += testcase.testcase[0]._attr.time;
       testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(4);
     });
-    _suiteAttr.time = suiteTime.toFixed(4);
 
     if (antMode) {
       missingProps = ['system-out', 'system-err'];
@@ -430,7 +456,6 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
       delete _suiteAttr.skipped;
     }
 
-    totalSuitesTime += suiteTime;
     totalTests += _suiteAttr.tests;
   });
 
@@ -439,7 +464,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     var rootSuite = {
       _attr: {
         name: this._options.testsuitesTitle,
-        time: totalSuitesTime.toFixed(4),
+        time: (stats.duration / 1000 || 0).toFixed(4),
         tests: totalTests,
         failures: stats.failures
       }
