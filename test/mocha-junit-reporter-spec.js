@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-'use-strict';
+'use strict';
 
 var Reporter = require('../index');
 var Runner = require('./helpers/mock-runner');
