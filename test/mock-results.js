@@ -1,3 +1,5 @@
+'use strict';
+
 var xml = require('xml');
 
 module.exports = function(stats, options) {
