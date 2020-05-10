@@ -1,7 +1,8 @@
 .c9/
 .idea/
 node_modules/
-test/subdir/
 test/*.xml
+test/output/
 node-debug*
 npm-debug*
+test-results.xml

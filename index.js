@@ -203,6 +203,7 @@ function MochaJUnitReporter(runner, options) {
   this._antId = 0;
 
   var testsuites = [];
+  this._testsuites = testsuites;
 
   function lastSuite() {
     return testsuites[testsuites.length - 1].testsuite;
@@ -366,12 +367,12 @@ MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
  * @param {Array.<Object>} testsuites - a list of xml configs
  */
 MochaJUnitReporter.prototype.flush = function(testsuites){
-  var xml = this.getXml(testsuites);
+  this._xml = this.getXml(testsuites);
 
-  this.writeXmlToDisk(xml, this._options.mochaFile);
+  this.writeXmlToDisk(this._xml, this._options.mochaFile);
 
   if (this._options.toConsole === true) {
-    console.log(xml); // eslint-disable-line no-console
+    console.log(this._xml); // eslint-disable-line no-console
   }
 };
 

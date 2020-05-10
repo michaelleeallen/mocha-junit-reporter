@@ -8,7 +8,7 @@ module.exports = function(stats, options) {
       {
         _attr: {
           name: "Mocha Tests",
-          tests: 3,
+          tests: 4,
           failures: "2",
           time: "432.1100"
         }
@@ -17,9 +17,22 @@ module.exports = function(stats, options) {
         testsuite: [
           {
             _attr: {
-              name: "Foo Bar module",
+              name: "Root Suite",
               timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
-              tests: "2",
+              tests: "0",
+              failures: "0",
+              time: "0.0000"
+            }
+          }
+        ]
+      },
+      {
+        testsuite: [
+          {
+            _attr: {
+              name: "Foo Bar",
+              timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+              tests: "3",
               failures: "2",
               time: "32.1060"
             }
@@ -27,7 +40,7 @@ module.exports = function(stats, options) {
           {
             testcase: {
               _attr: {
-                name: "Foo can weez the juice",
+                name: "Foo Bar can weez the juice",
                 classname: "can weez the juice",
                 time: "0.1010"
               }
@@ -37,7 +50,7 @@ module.exports = function(stats, options) {
             testcase: [
               {
                 _attr: {
-                  name: "Bar can narfle the garthog",
+                  name: "Foo Bar can narfle the garthog",
                   classname: "can narfle the garthog",
                   time: "2.0020"
                 }
@@ -45,10 +58,10 @@ module.exports = function(stats, options) {
               {
                 failure: {
                   _attr: {
-                      message: "",
-                      type: ""
+                      message: "expected garthog to be dead",
+                      type: "Error"
                   },
-                  _cdata: "expected garthog to be dead"
+                  _cdata: "this is where the stack would be"
                 }
               }
             ]
@@ -57,7 +70,7 @@ module.exports = function(stats, options) {
             testcase: [
               {
                 _attr: {
-                  name: "Baz can behave like a flandip",
+                  name: "Foo Bar can behave like a flandip",
                   classname: "can behave like a flandip",
                   time: "30.0030"
                 }
@@ -68,7 +81,7 @@ module.exports = function(stats, options) {
                       message: "expected baz to be masher, a hustler, an uninvited grasper of cone",
                       type: "BazError"
                   },
-                  _cdata: "expected baz to be masher, a hustler, an uninvited grasper of cone"
+                  _cdata: "stack"
                 }
               }
             ]
@@ -89,7 +102,7 @@ module.exports = function(stats, options) {
           {
             testcase: {
               _attr: {
-                name: "Another suite",
+                name: "Another suite! works",
                 classname: "works",
                 time: "400.0040"
               }
@@ -99,12 +112,6 @@ module.exports = function(stats, options) {
       }
     ]
   };
-
-  if (options && options.skipPassedTests) {
-    data.testsuites[0]._attr.time = "432.0090";
-    data.testsuites[1].testsuite[0]._attr.time = "32.0050";
-    data.testsuites[1].testsuite.splice(1, 1);
-  }
 
   if (options && options.properties) {
     var properties = {
@@ -123,8 +130,10 @@ module.exports = function(stats, options) {
         ]
       });
     }
-    data.testsuites[1].testsuite.push(properties);
-    data.testsuites[2].testsuite.push(properties);
+
+    for (i = 1; i < data.testsuites.length; i++) {
+      data.testsuites[i].testsuite.push(properties);
+    }
   }
 
   if (stats.pending) {
@@ -146,7 +155,7 @@ module.exports = function(stats, options) {
           testcase: [
             {
               _attr: {
-                name: "Pending suite",
+                name: "Pending suite! pending",
                 classname: "pending",
                 time: "0.0000"
               }

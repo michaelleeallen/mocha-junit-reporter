@@ -2,11 +2,14 @@
 'use strict';
 
 var Reporter = require('../index');
-var Runner = require('./helpers/mock-runner');
-var Test = require('./helpers/mock-test');
+var Mocha = require('mocha');
+var Runner = Mocha.Runner;
+var Suite = Mocha.Suite;
+var Test = Mocha.Test;
 
 var fs = require('fs');
 var path = require('path');
+var rimraf = require('rimraf');
 
 var chai = require('chai');
 var expect = chai.expect;
@@ -20,82 +23,142 @@ var debug = require('debug')('mocha-junit-reporter:tests');
 chai.use(chaiXML);
 
 describe('mocha-junit-reporter', function() {
-  var runner;
   var filePath;
   var MOCHA_FILE;
+  var stdout;
 
-  function executeTestRunner(options) {
-    options = options || {};
-    options.invalidChar = options.invalidChar || '';
-    options.title = options.title || 'Foo Bar module';
-    options.root = (typeof options.root !== 'undefined') ? options.root : false;
-    runner.start();
-
-    runner.startSuite({
-      title: options.title,
-      root: options.root,
-      tests: [1, 2]
-    });
-
-    if (!options.skipPassedTests) {
-      runner.pass(new Test('Foo can weez the juice', 'can weez the juice', 101));
-    }
-
-    runner.fail(new Test('Bar can narfle the garthog', 'can narfle the garthog', 2002), {
-      stack: options.invalidChar + 'expected garthog to be dead' + options.invalidChar
-    });
-
-    runner.fail(new Test('Baz can behave like a flandip', 'can behave like a flandip', 30003), {
-      name: 'BazError',
-      message: 'expected baz to be masher, a hustler, an uninvited grasper of cone'
-    });
-
-    runner.startSuite({
-      title: 'Another suite!',
-      tests: [1]
-    });
-    runner.pass(new Test('Another suite', 'works', 400004));
-
-    if (options && options.includePending) {
-      runner.startSuite({
-        title: 'Pending suite!',
-        tests: [1]
-      });
-      runner.pending(new Test('Pending suite', 'pending'));
-    }
-
-    runner.end();
+  function mockStdout () {
+    stdout = testConsole.stdout.inspect();
+    return stdout;
   }
 
-  function verifyMochaFile(path, options) {
+  function createTest(name, options, fn) {
+    if (typeof options === 'function') {
+      fn = options;
+      options = null;
+    }
+    options = options || {};
+
+    // null fn means no callback which mocha treats as pending test.
+    // undefined fn means caller wants a default fn.
+    if (fn === undefined) {
+      fn = function () {};
+    }
+
+    var test = new Test(name, fn);
+
+    var duration = options.duration;
+    if (duration != null) {
+      // mock duration so we have consistent output
+      Object.defineProperty(test, 'duration', {
+        set: function() {
+          // do nothing
+        },
+        get: function() {
+          return duration;
+        }
+      });
+    }
+
+    return test;
+  }
+
+  function executeTestRunner(runner, options, callback) {
+    if (!callback) {
+      callback = options;
+      options = null;
+    }
+    options = options || {};
+    options.invalidChar = options.invalidChar || '';
+    options.title = options.title || 'Foo Bar';
+
+    var rootSuite = runner.suite;
+
+    var suite1 = Suite.create(rootSuite, options.title);
+    suite1.addTest(createTest('can weez the juice', {
+      duration: 101
+    }));
+
+    suite1.addTest(createTest('can narfle the garthog', {duration: 2002}, function(done) {
+      var err = new Error(options.invalidChar + 'expected garthog to be dead' + options.invalidChar);
+      err.stack = 'this is where the stack would be';
+      done(err);
+    }));
+
+    suite1.addTest(createTest('can behave like a flandip', {duration: 30003}, function(done) {
+      var err = new Error('expected baz to be masher, a hustler, an uninvited grasper of cone');
+      err.name = 'BazError';
+      err.stack = 'stack';
+      done(err);
+    }));
+
+    var suite2 = Suite.create(rootSuite, 'Another suite!');
+    suite2.addTest(createTest('works', {duration: 400004}));
+
+    if (options.includePending) {
+      var pendingSuite = Suite.create(rootSuite, 'Pending suite!');
+      pendingSuite.addTest(createTest('pending', null, null));
+    }
+
+    runRunner(runner, callback);
+  }
+
+  function assertXmlEquals(actual, expected) {
+    expect(actual).xml.to.be.valid();
+    expect(actual).xml.to.equal(expected);
+  }
+
+  function verifyMochaFile(runner, path, options) {
     var now = (new Date()).toISOString();
     debug('verify', now);
     var output = fs.readFileSync(path, 'utf-8');
-    expect(output).xml.to.be.valid();
-    expect(output).xml.to.equal(mockXml(runner.stats, options));
-    fs.unlinkSync(path);
+    assertXmlEquals(output, mockXml(runner.stats, options));
     debug('done', now);
   }
 
-  function removeTestPath() {
-    var testPath = '/subdir/foo/mocha.xml';
-    var parts = testPath.slice(1).split('/');
-
-    parts.reduce(function(testPath) {
-      if (fs.existsSync(__dirname + testPath)) {
-        var removeFile = testPath.indexOf('.') === -1 ? 'rmdirSync' : 'unlinkSync';
-        fs[removeFile](__dirname + testPath);
+  function removeTestPath(callback) {
+    rimraf(__dirname + '/output', function(err) {
+      if (err) {
+        return callback(err);
       }
 
-      return path.dirname(testPath);
-    }, testPath);
+      // tests that exercise defaults will write to $CWD/test-results.xml
+      rimraf(__dirname + '/../test-results.xml', callback);
+    });
+  }
+
+  function createRunner() {
+    // mocha always has a root suite
+    var rootSuite = new Suite('', 'root', true);
+
+    // We don't want Mocha to emit timeout errors.
+    // If we want to simulate errors, we'll emit them ourselves.
+    rootSuite.enableTimeouts(false);
+
+    return new Runner(rootSuite);
   }
 
   function createReporter(options) {
     options = options || {};
     filePath = path.join(path.dirname(__dirname), options.mochaFile || '');
 
-    return new Reporter(runner, { reporterOptions: options });
+    var mocha = new Mocha({
+      reporter: Reporter,
+      allowUncaught: true
+    });
+
+    return new mocha._reporter(createRunner(), { reporterOptions: options });
+  }
+
+  function runRunner(runner, callback) {
+    runner.run(function(failureCount) {
+      // Ensure uncaught exception handlers are cleared before we execute test assertions.
+      // Otherwise, this runner would intercept uncaught exceptions that were already handled by the mocha instance
+      // running our tests.
+      runner.dispose();
+
+      callback(failureCount);
+    });
   }
 
   function getFileNameWithHash(path) {
@@ -109,9 +172,11 @@ describe('mocha-junit-reporter', function() {
     }
   }
 
-  before(function() {
+  before(function(done) {
     // cache this
     MOCHA_FILE = process.env.MOCHA_FILE;
+
+    removeTestPath(done);
   });
 
   after(function() {
@@ -120,411 +185,427 @@ describe('mocha-junit-reporter', function() {
   });
 
   beforeEach(function() {
-    runner = new Runner();
     filePath = undefined;
     delete process.env.MOCHA_FILE;
     delete process.env.PROPERTIES;
   });
 
-  afterEach(function() {
+  afterEach(function(done) {
     debug('after');
+    if (stdout) {
+      stdout.restore();
+    }
+
+    removeTestPath(done);
   });
 
-  it('can produce a JUnit XML report', function() {
-    createReporter({mochaFile: 'test/mocha.xml'});
-    executeTestRunner();
-
-    verifyMochaFile(filePath);
-  });
-
-  it('respects `process.env.MOCHA_FILE`', function() {
-    process.env.MOCHA_FILE = 'test/results.xml';
-    createReporter();
-    executeTestRunner();
-
-    verifyMochaFile(process.env.MOCHA_FILE);
-  });
-
-  it('respects `process.env.PROPERTIES`', function() {
-    process.env.PROPERTIES = 'CUSTOM_PROPERTY:ABC~123';
-    createReporter({mochaFile: 'test/properties.xml'});
-    executeTestRunner();
-    verifyMochaFile(filePath, {
-      properties: [
-        {
-          name: 'CUSTOM_PROPERTY',
-          value: 'ABC~123'
-        }
-      ]
+  it('can produce a JUnit XML report', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, filePath);
+      done();
     });
   });
 
-  it('respects `--reporter-options mochaFile=`', function() {
-    createReporter({mochaFile: 'test/results.xml'});
-    executeTestRunner();
-
-    verifyMochaFile(filePath);
+  it('respects `process.env.MOCHA_FILE`', function(done) {
+    process.env.MOCHA_FILE = 'test/output/results.xml';
+    var reporter = createReporter();
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, process.env.MOCHA_FILE);
+      done();
+    });
   });
 
-  it('respects `[hash]` pattern in test results report filename', function() {
-    var dir = 'test/';
+  it('respects `process.env.PROPERTIES`', function(done) {
+    process.env.PROPERTIES = 'CUSTOM_PROPERTY:ABC~123';
+    var reporter = createReporter({mochaFile: 'test/output/properties.xml'});
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, filePath, {
+        properties: [
+          {
+            name: 'CUSTOM_PROPERTY',
+            value: 'ABC~123'
+          }
+        ]
+      });
+      done();
+    });
+  });
+
+  it('respects `--reporter-options mochaFile=`', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/results.xml'});
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, filePath);
+      done();
+    });
+  });
+
+  it('respects `[hash]` pattern in test results report filename', function(done) {
+    var dir = 'test/output/';
     var path = dir + 'results.[hash].xml';
-    createReporter({mochaFile: path});
-    executeTestRunner();
-    verifyMochaFile(dir + getFileNameWithHash(dir));
+    var reporter = createReporter({mochaFile: path});
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, dir + getFileNameWithHash(dir));
+      done();
+    });
   });
 
-  it('will create intermediate directories', function() {
-    createReporter({mochaFile: 'test/subdir/foo/mocha.xml'});
-    removeTestPath();
-    executeTestRunner();
-
-    verifyMochaFile(filePath);
-    removeTestPath();
+  it('will create intermediate directories', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/foo/mocha.xml'});
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, filePath);
+      done();
+    });
   });
 
-  it('creates valid XML report for invalid message', function() {
-    createReporter({mochaFile: 'test/mocha.xml'});
-    executeTestRunner({invalidChar: '\u001b'});
-
-    verifyMochaFile(filePath);
+  it('creates valid XML report for invalid message', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
+    executeTestRunner(reporter.runner, {invalidChar: '\u001b'}, function() {
+      assertXmlEquals(reporter._xml, mockXml(reporter.runner.stats));
+      done();
+    });
   });
 
-  it('creates valid XML report even if title contain ANSI character sequences', function() {
-    createReporter({mochaFile: 'test/mocha.xml'});
-    executeTestRunner({title: '[38;5;104m[1mFoo Bar module[22m'});
-
-    verifyMochaFile(filePath);
+  it('creates valid XML report even if title contains ANSI character sequences', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
+    executeTestRunner(reporter.runner, {title: '[38;5;104m[1mFoo Bar'}, function() {
+      verifyMochaFile(reporter.runner, filePath);
+      done();
+    });
   });
 
-  it('outputs pending tests if "includePending" is specified', function() {
-    createReporter({mochaFile: 'test/mocha.xml', includePending: true});
-    executeTestRunner({includePending: true});
-
-    verifyMochaFile(filePath);
+  it('outputs pending tests if "includePending" is specified', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/mocha.xml', includePending: true});
+    executeTestRunner(reporter.runner, {includePending: true}, function() {
+      verifyMochaFile(reporter.runner, filePath);
+      done();
+    });
   });
 
-  it('can output to the console', function() {
-    createReporter({mochaFile: 'test/console.xml', toConsole: true});
+  it('can output to the console', function(done) {
+    var reporter = createReporter({mochaFile: 'test/output/console.xml', toConsole: true});
 
-    var stdout = testConsole.stdout.inspect();
-    try {
-      executeTestRunner();
-      verifyMochaFile(filePath);
-    } catch (e) {
-      stdout.restore();
-      throw e;
-    }
+    var stdout = mockStdout();
+    executeTestRunner(reporter.runner, function() {
+      verifyMochaFile(reporter.runner, filePath);
 
-    stdout.restore();
+      var xml = stdout.output[0];
+      assertXmlEquals(xml, mockXml(reporter.runner.stats));
 
-    var xml = stdout.output[0];
-    expect(xml).xml.to.be.valid();
-    expect(xml).xml.to.equal(mockXml(runner.stats));
+      done();
+    });
   });
 
-  it('properly outputs tests when amount of tests is wrong', function() {
-    createReporter({mochaFile: 'test/mocha.xml'});
-    // emulates exception in before each hook
-    executeTestRunner({skipPassedTests: true});
+  it('properly outputs tests when error in beforeAll', function(done) {
+    var reporter = createReporter();
+    var rootSuite = reporter.runner.suite;
+    var suite1 = Suite.create(rootSuite, 'failing beforeAll');
+    suite1.beforeAll('failing hook', function() {
+      throw new Error('error in before');
+    });
+    suite1.addTest(createTest('test 1'));
 
-    verifyMochaFile(filePath, {skipPassedTests: true});
+    var suite2 = Suite.create(rootSuite, 'good suite');
+    suite2.addTest(createTest('test 2'));
+
+    runRunner(reporter.runner, function() {
+      reporter.runner.dispose();
+      expect(reporter._testsuites).to.have.lengthOf(3);
+      expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal('failing beforeAll');
+      expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(2);
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('failing beforeAll "before all" hook: failing hook for "test 1"');
+      expect(reporter._testsuites[1].testsuite[1].testcase[1].failure._attr.message).to.equal('error in before');
+      expect(reporter._testsuites[2].testsuite[0]._attr.name).to.equal('good suite');
+      expect(reporter._testsuites[2].testsuite[1].testcase).to.have.lengthOf(1);
+      expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('good suite test 2');
+      done();
+    });
   });
 
   describe('when "useFullSuiteTitle" option is specified', function() {
-    var suiteTitles = ['test suite', 'when has parent'];
-
-    it('generates full suite title', function() {
-      var reporter = configureReporter({useFullSuiteTitle: true });
-
-      expect(suiteName(reporter.suites[0])).to.equal(suiteTitles[0]);
-      expect(suiteName(reporter.suites[1])).to.equal(suiteTitles.join(' '));
+    it('generates full suite title', function(done) {
+      var reporter = createReporter({useFullSuiteTitle: true });
+      executeTestRunner(reporter.runner, function() {
+        expect(suiteName(reporter._testsuites[0])).to.equal('');
+        expect(suiteName(reporter._testsuites[1])).to.equal('Root Suite Foo Bar');
+        expect(suiteName(reporter._testsuites[2])).to.equal('Root Suite Another suite!');
+        done();
+      });
     });
 
-    it('generates full suite title separated by "suiteTitleSeparatedBy" option', function() {
-      var reporter = configureReporter({useFullSuiteTitle: true, suiteTitleSeparatedBy: '.'});
-      expect(suiteName(reporter.suites[1])).to.equal(suiteTitles.join('.'));
+    it('generates full suite title separated by "suiteTitleSeparatedBy" option', function(done) {
+      var reporter = createReporter({useFullSuiteTitle: true, suiteTitleSeparatedBy: '.'});
+      executeTestRunner(reporter.runner, function() {
+        expect(suiteName(reporter._testsuites[0])).to.equal('');
+        expect(suiteName(reporter._testsuites[1])).to.equal('Root Suite.Foo Bar');
+        expect(suiteName(reporter._testsuites[2])).to.equal('Root Suite.Another suite!');
+        done();
+      });
     });
 
-    it('respects the misspelled "suiteTitleSeparatedBy" option', function() {
-      var reporter = configureReporter({useFullSuiteTitle: true, suiteTitleSeparedBy: '.'});
-      expect(suiteName(reporter.suites[1])).to.equal(suiteTitles.join('.'));
+    it('respects the misspelled "suiteTitleSeparatedBy" option', function(done) {
+      var reporter = createReporter({useFullSuiteTitle: true, suiteTitleSeparedBy: '.'});
+      executeTestRunner(reporter.runner, function() {
+        expect(suiteName(reporter._testsuites[0])).to.equal('');
+        expect(suiteName(reporter._testsuites[1])).to.equal('Root Suite.Foo Bar');
+        expect(suiteName(reporter._testsuites[2])).to.equal('Root Suite.Another suite!');
+        done();
+      });
     });
 
     function suiteName(suite) {
       return suite.testsuite[0]._attr.name;
     }
-
-    function configureReporter(options) {
-      var reporter = createReporter(options);
-
-      reporter.flush = function(suites) {
-        reporter.suites = suites;
-      };
-
-      suiteTitles.forEach(function(title) {
-        runner.startSuite({title: title, suites: [1], tests: [1]});
-      });
-      runner.end();
-
-      return reporter;
-    }
   });
 
   describe('when "outputs" option is specified', function() {
-    it('adds output/error lines to xml report', function() {
+    it('adds output/error lines to xml report', function(done) {
       var reporter = createReporter({outputs: true});
-      var suite = {title: 'with console output and error', tests: [1]};
-      var test = new Test('has outputs', 'outputs', 1);
-      var testsuites;
-      var xml;
-      runner.startSuite(suite);
+
+      var test = createTest('has outputs');
       test.consoleOutputs = [ 'hello', 'world' ];
       test.consoleErrors = [ 'typical diagnostic info', 'all is OK' ];
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(3);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', 'hello\nworld');
-      expect(testsuites[0].testsuite[1].testcase[2]).to.have.property('system-err', 'typical diagnostic info\nall is OK');
-      xml = reporter.getXml(testsuites);
 
-      expect(xml).to.include('<system-out>hello\nworld</system-out>');
-      expect(xml).to.include('<system-err>typical diagnostic info\nall is OK</system-err>');
+      var suite = Suite.create(reporter.runner.suite, 'with console output and error');
+      suite.addTest(test);
+
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(3);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+        expect(reporter._testsuites[1].testsuite[1].testcase[1]).to.have.property('system-out', 'hello\nworld');
+        expect(reporter._testsuites[1].testsuite[1].testcase[2]).to.have.property('system-err', 'typical diagnostic info\nall is OK');
+
+        expect(reporter._xml).to.include('<system-out>hello\nworld</system-out>');
+        expect(reporter._xml).to.include('<system-err>typical diagnostic info\nall is OK</system-err>');
+
+        done();
+      });
     });
 
-    it('does not add system-out if no outputs/errors were passed', function() {
+    it('does not add system-out if no outputs/errors were passed', function(done) {
       var reporter = createReporter({outputs: true});
-      var suite = {title: 'with console output and error', tests: [1]};
-      var test = new Test('has outputs', 'outputs', 1);
-      var testsuites;
-      var xml;
-      runner.startSuite(suite);
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      xml = reporter.getXml(testsuites);
+      var test = createTest('has outputs');
+      var suite = Suite.create(reporter.runner.suite, 'with console output and error');
+      suite.addTest(test);
 
-      expect(xml).not.to.include('<system-out>');
-      expect(xml).not.to.include('<system-err>');
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(1);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+
+        expect(reporter._xml).not.to.include('<system-out>');
+        expect(reporter._xml).not.to.include('<system-err>');
+
+        done();
+      });
     });
 
-    it('does not add system-out if outputs/errors were empty', function() {
+    it('does not add system-out if outputs/errors were empty', function(done) {
       var reporter = createReporter({outputs: true});
-      var suite = {title: 'with console output and error', tests: [1]};
-      var test = new Test('has outputs', 'outputs', 1);
-      var testsuites;
-      var xml;
-      runner.startSuite(suite);
+      var test = createTest('has outputs');
       test.consoleOutputs = [];
       test.consoleErrors = [];
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      xml = reporter.getXml(testsuites);
 
-      expect(xml).not.to.include('<system-out>');
-      expect(xml).not.to.include('<system-err>');
+      var suite = Suite.create(reporter.runner.suite, 'with console output and error');
+      suite.addTest(test);
+
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(1);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+
+        expect(reporter._xml).not.to.include('<system-out>');
+        expect(reporter._xml).not.to.include('<system-err>');
+
+        done();
+      });
     });
   });
 
   describe('when "attachments" option is specified', function() {
-    it('adds attachments to xml report', function() {
-      var reporter = createReporter({attachments: true});
-      var suite = {title: 'with attachments', tests: [1]};
-      var test = new Test('has attachment', 'included attachment', 1);
+    it('adds attachments to xml report', function(done) {
       var filePath = '/path/to/file';
-      var testsuites;
-      var xml;
-      runner.startSuite(suite);
+      var reporter = createReporter({attachments: true});
+      var test = createTest('has attachment');
       test.attachments = [filePath];
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(2);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', '[[ATTACHMENT|' + filePath + ']]');
-      xml = reporter.getXml(testsuites);
 
-      expect(xml).to.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+      var suite = Suite.create(reporter.runner.suite, 'with attachments');
+      suite.addTest(test);
+
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(2);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+        expect(reporter._testsuites[1].testsuite[1].testcase[1]).to.have.property('system-out', '[[ATTACHMENT|' + filePath + ']]');
+
+        expect(reporter._xml).to.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+
+        done();
+      });
     });
 
-    it('does not add system-out if no attachments were passed', function() {
+    it('does not add system-out if no attachments were passed', function(done) {
       var reporter = createReporter({attachments: true});
-      var suite = {title: 'with attachments', tests: [1]};
-      var test = new Test('has attachment', 'included attachment', 1);
-      var filePath = '/path/to/file';
-      var testsuites;
-      var xml;
-      runner.startSuite(suite);
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      xml = reporter.getXml(testsuites);
+      var test = createTest('has attachment');
 
-      expect(xml).to.not.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+      var suite = Suite.create(reporter.runner.suite, 'with attachments');
+      suite.addTest(test);
+
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(1);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+
+        expect(reporter._xml).to.not.include('<system-out>');
+
+        done();
+      });
     });
 
-    it('does not add system-out if no attachments array is empty', function() {
+    it('does not add system-out if attachments array is empty', function(done) {
       var reporter = createReporter({attachments: true});
-      var suite = {title: 'with attachments', tests: [1]};
-      var test = new Test('has attachment', 'included attachment', 1);
-      var filePath = '/path/to/file';
-      var testsuites;
-      var xml;
+      var test = createTest('has attachment');
       test.attachments = [];
-      runner.startSuite(suite);
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(1);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      xml = reporter.getXml(testsuites);
 
-      expect(xml).to.not.include('<system-out>[[ATTACHMENT|' + filePath + ']]</system-out>');
+      var suite = Suite.create(reporter.runner.suite, 'with attachments');
+      suite.addTest(test);
+
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(1);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+
+        expect(reporter._xml).to.not.include('<system-out>');
+
+        done();
+      });
     });
 
-    it('includes both console outputs and attachments in XML', function() {
-      var reporter = createReporter({attachments: true, outputs:true});
-      var suite = {title: 'with attachments', tests: [1]};
-      var test = new Test('has attachment', 'included attachment', 1);
+    it('includes both console outputs and attachments in XML', function(done) {
+      var reporter = createReporter({attachments: true, outputs: true});
+      var test = createTest('has attachment');
       var filePath = '/path/to/file';
-      var testsuites;
-      var xml;
-      runner.startSuite(suite);
       test.attachments = [filePath];
       test.consoleOutputs = [ 'first console line', 'second console line' ];
-      runner.pass(test);
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr.name).to.equal(suite.title);
-      expect(testsuites[0].testsuite[1].testcase).to.have.length(2);
-      expect(testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
-      expect(testsuites[0].testsuite[1].testcase[1]).to.have.property('system-out', 'first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]');
-      xml = reporter.getXml(testsuites);
 
-      expect(xml).to.include('<system-out>first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]</system-out>');
+      var suite = Suite.create(reporter.runner.suite, 'with attachments and outputs');
+      suite.addTest(test);
+
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(2);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+        expect(reporter._testsuites[1].testsuite[1].testcase[1]).to.have.property('system-out', 'first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]');
+
+        expect(reporter._xml).to.include('<system-out>first console line\nsecond console line\n[[ATTACHMENT|' + filePath + ']]</system-out>');
+
+        done();
+      });
     });
   });
 
   describe('Output', function() {
-    var reporter, testsuites;
+    it('skips suites with empty title', function(done) {
+      var reporter = createReporter();
+      var suite = Suite.create(reporter.runner.suite, '');
+      suite.root = false; // mocha treats suites with empty title as root, so not sure this is possible
+      suite.addTest(createTest('test'));
 
-    beforeEach(function() {
-      reporter = spyingReporter();
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites).to.have.lengthOf(1);
+        expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('Root Suite');
+        done();
+      });
     });
 
-    it('skips suites with empty title', function() {
-      runner.startSuite({title: '', tests: [1]});
-      runner.end();
+    it('skips suites without testcases and suites', function(done) {
+      var reporter = createReporter();
+      Suite.create(reporter.runner.suite, 'empty suite');
 
-      expect(testsuites).to.be.empty;
+      // mocha won't emit the `suite` event if a suite has no tests in it, so we won't even output the root suite.
+      // See https://github.com/mochajs/mocha/blob/c0137eb698add08f29035467ea1dc230904f82ba/lib/runner.js#L723.
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites).to.have.lengthOf(0);
+        done();
+      });
     });
 
-    it('skips suites without testcases and suites', function() {
-      runner.startSuite({title: 'test me'});
-      runner.end();
+    it('skips suites without testcases even if they have nested suites', function(done) {
+      var reporter = createReporter();
+      var suite1 = Suite.create(reporter.runner.suite, 'suite');
+      Suite.create(suite1, 'nested suite');
 
-      expect(testsuites).to.be.empty;
+      runRunner(reporter.runner, function() {
+        // even though we have nested suites, there are no tests so mocha won't emit the `suite` event
+        expect(reporter._testsuites).to.have.lengthOf(0);
+        done();
+      });
     });
 
-    it('does not skip suites with nested suites', function() {
-      runner.startSuite({title: 'test me', suites: [1]});
-      runner.end();
+    it('does not skip suites with nested tests', function(done) {
+      var reporter = createReporter();
+      var suite = Suite.create(reporter.runner.suite, 'nested suite');
+      suite.addTest(createTest('test'));
 
-      expect(testsuites).to.have.length(1);
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites).to.have.lengthOf(2);
+        expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('Root Suite');
+        expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(1);
+        expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('nested suite test');
+        done();
+      });
     });
 
-    it('does not skip suites with nested tests', function() {
-      runner.startSuite({title: 'test me', tests: [1]});
-      runner.end();
+    it('does not skip root suite', function(done) {
+      var reporter = createReporter();
+      reporter.runner.suite.addTest(createTest('test'));
 
-      expect(testsuites).to.have.length(1);
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites).to.have.lengthOf(1);
+        expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('Root Suite');
+        expect(reporter._testsuites[0].testsuite[1].testcase).to.have.lengthOf(1);
+        expect(reporter._testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal('test');
+        done();
+      });
     });
 
-    it('does not skip root suite', function() {
-      runner.startSuite({title: '', root: true, suites: [1]});
-      runner.end();
-
-      expect(testsuites).to.have.length(1);
-    });
-
-    it('uses "Root Suite" by default', function() {
-      runner.startSuite({title: '', root: true, suites: [1]});
-      runner.end();
-      expect(testsuites[0].testsuite[0]._attr).to.have.property('name', 'Root Suite');
-    });
-
-    it('respects the `rootSuiteTitle`', function() {
+    it('respects the `rootSuiteTitle`', function(done) {
       var name = 'The Root Suite!';
-      reporter = spyingReporter({rootSuiteTitle: name});
-      runner.startSuite({title: '', root: true, suites: [1]});
-      runner.end();
+      var reporter = createReporter({rootSuiteTitle: name});
+      reporter.runner.suite.addTest(createTest('test'));
 
-      expect(testsuites[0].testsuite[0]._attr).to.have.property('name', name);
+      runRunner(reporter.runner, function() {
+        expect(reporter._testsuites).to.have.lengthOf(1);
+        expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal(name);
+        done();
+      });
     });
 
-    it('uses "Mocha Tests" by default', function() {
-      runner.startSuite({title: '', root: true, suites: [1]});
-      runner.end();
-      var xml = reporter.getXml(testsuites);
+    it('uses "Mocha Tests" by default', function(done) {
+      var reporter = createReporter();
+      reporter.runner.suite.addTest(createTest('test'));
 
-      expect(xml.indexOf('testsuites name="Mocha Tests"')).not.to.equal(-1);
+      runRunner(reporter.runner, function() {
+        expect(reporter._xml).to.include('testsuites name="Mocha Tests"');
+        done();
+      });
     });
 
-    it('respects the `testsuitesTitle`', function() {
-      var xml, title = 'SuitesTitle';
+    it('respects the `testsuitesTitle`', function(done) {
+      var title = 'SuitesTitle';
+      var reporter = createReporter({testsuitesTitle: title});
+      reporter.runner.suite.addTest(createTest('test'));
 
-      reporter = spyingReporter({testsuitesTitle: title});
-      runner.startSuite({title: '', root: true, suites: [1]});
-      runner.end();
-      xml = reporter.getXml(testsuites);
-      expect(xml.indexOf('testsuites name="SuitesTitle"')).not.to.equal(-1);
+      runRunner(reporter.runner, function() {
+        expect(reporter._xml).to.include('testsuites name="SuitesTitle"');
+        done();
+      });
     });
-
-    function spyingReporter(options) {
-      options = options || {};
-      options.mochaFile = options.mochaFile || 'test/mocha.xml';
-
-      reporter = createReporter(options);
-
-      reporter.flush = function(suites) {
-        testsuites = suites;
-      };
-
-      return reporter;
-    }
   });
 
   describe('Feature "Configurable classname/name switch"', function() {
-    var reporter, mockedTestCase = {
+    var mockedTestCase = {
       title: "should behave like so",
       timestamp: 123,
       tests: "1",
@@ -536,21 +617,21 @@ describe('mocha-junit-reporter', function() {
     };
 
     it('should generate valid testCase for testCaseSwitchClassnameAndName default', function() {
-      reporter = createReporter({mochaFile: 'test/mocha.xml'});
+      var reporter = createReporter();
       var testCase = reporter.getTestcaseData(mockedTestCase);
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
     });
 
     it('should generate valid testCase for testCaseSwitchClassnameAndName=false', function() {
-      reporter = createReporter({mochaFile: 'test/mocha.xml', testCaseSwitchClassnameAndName: false});
+      var reporter = createReporter({testCaseSwitchClassnameAndName: false});
       var testCase = reporter.getTestcaseData(mockedTestCase);
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.fullTitle());
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.title);
     });
 
     it('should generate valid testCase for testCaseSwitchClassnameAndName=true', function() {
-      reporter = createReporter({mochaFile: 'test/mocha.xml', testCaseSwitchClassnameAndName: true});
+      var reporter = createReporter({testCaseSwitchClassnameAndName: true});
       var testCase = reporter.getTestcaseData(mockedTestCase);
       expect(testCase.testcase[0]._attr.name).to.equal(mockedTestCase.title);
       expect(testCase.testcase[0]._attr.classname).to.equal(mockedTestCase.fullTitle());
@@ -558,98 +639,76 @@ describe('mocha-junit-reporter', function() {
   });
 
   describe('XML format', function () {
-    var suites = [
-      {testsuite:
-        {title: '', root: true, suites: [2], tests: [0]}
-      },
-      {testsuite:
-        {title: 'Inner Suite', suites: [1], tests: [1]}, pass: [
-          {title: 'test', fullTitle: 'Inner Suite test'}
-        ]
-      },
-      {testsuite:
-        {title: 'Another Suite', suites: [1], tests: [1]}, fail: [
-          {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}
-        ]
-      }
-    ];
+    it('generates Jenkins compatible XML when in jenkinsMode', function(done) {
+      this.timeout(10000); // xmllint is very slow
 
-    it('generates Jenkins compatible XML when in jenkinsMode', function() {
-      var reporter = configureReporter({jenkinsMode: true }, suites);
-      var xml = reporter.getXml(reporter.suites);
-      var schema = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
+      var reporter = createReporter({jenkinsMode: true});
+      var rootSuite = reporter.runner.suite;
 
-      var result = xmllint.validateXML({ xml: xml, schema: schema });
-      expect(result.errors).to.equal(null, JSON.stringify(result.errors));
+      var suite1 = Suite.create(rootSuite, 'Inner Suite');
+      suite1.addTest(createTest('test'));
+
+      var suite2 = Suite.create(rootSuite, 'Another Suite');
+      suite2.addTest(createTest('test', function(done) {
+        done(new Error('failed test'));
+      }));
+
+      runRunner(reporter.runner, function() {
+        var schema = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
+        var result = xmllint.validateXML({ xml: reporter._xml, schema: schema });
+        expect(result.errors).to.equal(null, JSON.stringify(result.errors));
+
+        done();
+      });
     });
 
-    it('generates Ant compatible XML when in antMode', function() {
-      var reporter = configureReporter({antMode: true }, suites);
-      var xml = reporter.getXml(reporter.suites);
-      var schema = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
+    it('generates Ant compatible XML when in antMode', function(done) {
+      this.timeout(10000); // xmllint is very slow
 
-      var result = xmllint.validateXML({ xml: xml, schema: schema });
-      expect(result.errors).to.equal(null, JSON.stringify(result.errors));
+      var reporter = createReporter({antMode: true});
+      var rootSuite = reporter.runner.suite;
+
+      var suite1 = Suite.create(rootSuite, 'Inner Suite');
+      suite1.addTest(createTest('test'));
+
+      var suite2 = Suite.create(rootSuite, 'Another Suite');
+      suite2.addTest(createTest('test', function(done) {
+        done(new Error('failed test'));
+      }));
+
+      runRunner(reporter.runner, function() {
+        var schema = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
+        var result = xmllint.validateXML({ xml: reporter._xml, schema: schema });
+        expect(result.errors).to.equal(null, JSON.stringify(result.errors));
+
+        done();
+      });
     });
 
     describe('Jenkins format', function () {
-      var suites = [
-        {
-          testsuite: {
-            title: 'Inner Suite',
-            suites: [1],
-            tests: [1]
-          },
-          pass: [ {title: 'test', fullTitle: 'Inner Suite test'} ],
-          suites: [ {
-            testsuite: {
-              title: 'Another Suite',
-              suites: [1],
-              tests: [1]
-            },
-            fail: [ {title: 'fail test', fullTitle: 'Another Suite fail test', error: new Error('failed test')}]
-          } ]
-        },
-      ];
+      it('generates Jenkins compatible classnames and suite name', function(done) {
+        var reporter = createReporter({jenkinsMode: true});
+        var rootSuite = reporter.runner.suite;
 
-      it('generates Jenkins compatible classnames and suite name', function() {
-        var reporter = configureReporter({jenkinsMode: true}, suites);
+        var suite1 = Suite.create(rootSuite, 'Inner Suite');
+        suite1.addTest(createTest('test'));
 
-        debug('testcase', reporter.suites[0].testsuite[1].testcase[0]);
-        expect(reporter.suites[0].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title);
-        expect(reporter.suites[0].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].pass[0].title);
-        expect(reporter.suites[0].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title);
-        expect(reporter.suites[1].testsuite[0]._attr.name).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
-        expect(reporter.suites[1].testsuite[1].testcase[0]._attr.name).to.equal(suites[0].suites[0].fail[0].title);
-        expect(reporter.suites[1].testsuite[1].testcase[0]._attr.classname).to.equal(suites[0].testsuite.title + '.' + suites[0].suites[0].testsuite.title);
+        var suite2 = Suite.create(suite1, 'Another Suite');
+        suite2.addTest(createTest('fail test', function(done) {
+          done(new Error('failed test'));
+        }));
+
+        runRunner(reporter.runner, function() {
+          expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('');
+          expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('test');
+          expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.classname).to.equal('Inner Suite');
+          expect(reporter._testsuites[2].testsuite[0]._attr.name).to.equal('Root Suite.Inner Suite.Another Suite');
+          expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('fail test');
+          expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.classname).to.equal('Inner Suite.Another Suite');
+
+          done();
+        });
       });
     });
-
-    function configureReporter(options, suites) {
-      var reporter = createReporter(options);
-
-      reporter.flush = function(suites) {
-        reporter.suites = suites;
-      };
-
-      (suites || []).forEach(startSuite.bind(this, null));
-      runner.end();
-
-      return reporter;
-    }
-
-    function startSuite (parent, suite) {
-      runner.startSuite(suite.testsuite);
-      ['pass', 'fail', 'pending'].forEach(function (key) {
-        if (suite[key]) {
-          suite[key].forEach(function (test) {
-            var instance = new Test(test.fullTitle || test.title, test.title, 1);
-            instance.parent = suite.testsuite;
-            runner[key](instance, test.error);
-          });
-        }
-      });
-      (suite.suites || []).forEach(startSuite.bind(this, suite));
-    }
   });
 });
