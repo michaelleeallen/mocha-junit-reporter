@@ -186,7 +186,8 @@ output line 2
 | properties                     | `null`                 | a hash of additional properties to add to each test suite                                                               |
 | toConsole                      | `false`                | if set to a truthy value the produced XML will be logged to the console                                                 |
 | useFullSuiteTitle              | `false`                | if set to a truthy value nested suites' titles will show the suite lineage                                              |
-| suiteTitleSeparedBy            | ` ` (space)            | the character to use to separate nested suite titles. (defaults to ' ')                                                 |
+| suiteTitleSeparatedBy          | ` ` (space)            | the character to use to separate nested suite titles. (defaults to ' ', '.' if in jenkins mode)                         |
+| suiteTitleSeparedBy            | ` ` (space)            | deprecated. use `suiteTitleSeparatedBy`                                                                                 |
 | testCaseSwitchClassnameAndName | `false`                | set to a truthy value to switch name and classname values                                                               |
 | rootSuiteTitle                 | `Root Suite`           | the name for the root suite. (defaults to 'Root Suite')                                                                 |
 | testsuitesTitle                | `Mocha Tests`          | the name for the `testsuites` tag (defaults to 'Mocha Tests')                                                           |
