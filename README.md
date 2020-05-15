@@ -86,7 +86,7 @@ var mocha = new Mocha({
     reporter: 'mocha-junit-reporter',
     reporterOptions: {
         testsuitesTitle: true,
-        suiteTitleSeparatedBy: '.' // suites separator, default is space (' ')
+        suiteTitleSeparatedBy: '.' // suites separator, default is space (' '), or period ('.') in jenkins mode
     }
 });
 ```
