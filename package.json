@@ -4,7 +4,8 @@
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
-    "lint": "./node_modules/.bin/eslint '*.js' 'test/**/*.js'; exit 0",
+    "ci": "npm run lint && npm run test",
+    "lint": "./node_modules/.bin/eslint '*.js' 'test/**/*.js'",
     "test": "MOCHA_FILE=test/mocha.xml node_modules/.bin/mocha test --reporter=spec",
     "tdd": "MOCHA_FILE=test/mocha.xml node_modules/.bin/mocha test --reporter=min --watch"
   },
