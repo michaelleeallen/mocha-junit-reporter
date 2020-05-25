@@ -1,10 +1,5 @@
 language: node_js
-node_js:
-  - "6"
-  - "8"
-  - "10"
-  - "12"
-  - "14"
+node_js: ["10", "12", "14"]
 script: npm test
 deploy:
   provider: npm
