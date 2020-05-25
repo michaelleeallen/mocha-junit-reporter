@@ -10,7 +10,7 @@ var path = require('path');
 
 var chai = require('chai');
 var expect = chai.expect;
-var libxml = require("libxmljs");
+var xmllint = require('xmllint');
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
 var testConsole = require('test-console');
@@ -577,27 +577,19 @@ describe('mocha-junit-reporter', function() {
     it('generates Jenkins compatible XML when in jenkinsMode', function() {
       var reporter = configureReporter({jenkinsMode: true }, suites);
       var xml = reporter.getXml(reporter.suites);
-      var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
+      var schema = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
 
-      var xsdDoc = libxml.parseXml(xsd);
-      var xmlDoc = libxml.parseXml(xml);
-
-      xmlDoc.validate(xsdDoc);
-
-      expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+      var result = xmllint.validateXML({ xml: xml, schema: schema });
+      expect(result.errors).to.equal(null, JSON.stringify(result.errors));
     });
 
     it('generates Ant compatible XML when in antMode', function() {
       var reporter = configureReporter({antMode: true }, suites);
       var xml = reporter.getXml(reporter.suites);
-      var xsd = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
+      var schema = fs.readFileSync(path.join(__dirname, 'resources', 'JUnit.xsd'));
 
-      var xsdDoc = libxml.parseXml(xsd);
-      var xmlDoc = libxml.parseXml(xml);
-
-      xmlDoc.validate(xsdDoc);
-
-      expect(xmlDoc.validationErrors).to.be.deep.equal([]);
+      var result = xmllint.validateXML({ xml: xml, schema: schema });
+      expect(result.errors).to.equal(null, JSON.stringify(result.errors));
     });
 
     describe('Jenkins format', function () {
