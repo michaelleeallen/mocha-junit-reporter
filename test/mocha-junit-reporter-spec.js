@@ -343,16 +343,6 @@ describe('mocha-junit-reporter', function() {
       });
     });
 
-    it('respects the misspelled "suiteTitleSeparatedBy" option', function(done) {
-      var reporter = createReporter({useFullSuiteTitle: true, suiteTitleSeparedBy: '.'});
-      executeTestRunner(reporter.runner, function() {
-        expect(suiteName(reporter._testsuites[0])).to.equal('');
-        expect(suiteName(reporter._testsuites[1])).to.equal('Root Suite.Foo Bar');
-        expect(suiteName(reporter._testsuites[2])).to.equal('Root Suite.Another suite!');
-        done();
-      });
-    });
-
     function suiteName(suite) {
       return suite.testsuite[0]._attr.name;
     }

@@ -76,7 +76,7 @@ function configureDefaults(options) {
     updateOptionsForJenkinsMode(config);
   }
 
-  config.suiteTitleSeparatedBy = config.suiteTitleSeparatedBy || config.suiteTitleSeparedBy || ' ';
+  config.suiteTitleSeparatedBy = config.suiteTitleSeparatedBy || ' ';
 
   return config;
 }
