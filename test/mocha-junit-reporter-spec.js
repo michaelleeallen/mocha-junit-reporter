@@ -17,6 +17,7 @@ var xmllint = require('xmllint');
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
 var testConsole = require('test-console');
+var timekeeper = require('timekeeper');
 
 var debug = require('debug')('mocha-junit-reporter:tests');
 
@@ -319,6 +320,46 @@ describe('mocha-junit-reporter', function() {
       expect(reporter._testsuites[2].testsuite[1].testcase).to.have.lengthOf(1);
       expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('good suite test 2');
       done();
+    });
+  });
+
+  describe('when a test mocks the Date class', function(){
+    it("correctly records timestamps even if mock is not properly tore down", function(done) {
+      var thisYear = new Date().getFullYear();
+      var testYear = 2010;
+
+      var reporter = createReporter();
+      var rootSuite = reporter.runner.suite;
+      var suite1 = Suite.create(rootSuite, 'set timekeeper');
+      suite1.addTest(createTest('set timekeeper', function(){
+        timekeeper.travel(new Date(testYear + "-05-01"));
+        expect(new Date().getFullYear()).to.equal(testYear);
+      }));
+      var suite2 = Suite.create(rootSuite, 'after set timekeeper');
+      suite2.addTest(createTest('still in 2010', function(){
+        expect(new Date().getFullYear()).to.equal(testYear);
+      }));
+
+      runRunner(reporter.runner, function() {
+        reporter.runner.dispose();
+
+        // even though the current "Date" is still in the past, the reporter
+        // should have recorded the real timestamps.
+
+        expect(new Date().getFullYear()).to.equal(testYear);
+
+        expect(reporter._testsuites.length).to.equal(3);
+        reporter._testsuites.forEach(function (suites) {
+          var timestamp = suites.testsuite[0]._attr.timestamp;
+          var date = new Date(timestamp);
+          expect(date.getFullYear()).to.equal(thisYear);
+        });
+        done();
+      });
+    });
+
+    after(function(){
+      timekeeper.reset();
     });
   });
 

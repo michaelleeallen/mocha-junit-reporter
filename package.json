@@ -30,6 +30,7 @@
     "mocha": "^7.2.0",
     "rimraf": "^3.0.2",
     "test-console": "^1.0.0",
+    "timekeeper": "^2.2.0",
     "xmllint": "^0.1.1"
   },
   "dependencies": {

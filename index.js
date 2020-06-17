@@ -9,6 +9,9 @@ var mkdirp = require('mkdirp');
 var md5 = require('md5');
 var stripAnsi = require('strip-ansi');
 
+// capture global Date object before it's monkey-patched by timekeeper or otherwise mocked.
+var Date = global.Date;
+
 var createStatsCollector;
 var mocha6plus;
 
