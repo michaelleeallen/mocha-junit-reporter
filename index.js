@@ -363,6 +363,12 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       message = '';
     }
     var failureMessage = err.stack || message;
+    if (!Base.hideDiff && err.expected !== undefined) {
+        var oldUseColors = Base.useColors;
+        Base.useColors = false;
+        failureMessage += "\n" + Base.generateDiff(err.actual, err.expected);
+        Base.useColors = oldUseColors;
+    }
     var failureElement = {
       _attr: {
         message: this.removeInvalidCharacters(message) || '',

@@ -343,6 +343,26 @@ describe('mocha-junit-reporter', function() {
     });
   });
 
+  it('properly diffs errors from Chai', function(done) {
+    var reporter = createReporter();
+    var rootSuite = reporter.runner.suite;
+    var suite1 = Suite.create(rootSuite, 'failing with Chai');
+    suite1.addTest(createTest('test 1', function () {
+      expect({}).to.deep.equal({missingProperty: true});
+    }));
+
+    runRunner(reporter.runner, function() {
+      reporter.runner.dispose();
+      expect(reporter._testsuites).to.have.lengthOf(2);
+      expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal('failing with Chai');
+      expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(2);
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('failing with Chai test 1');
+      expect(reporter._testsuites[1].testsuite[1].testcase[1].failure._attr.message).to.equal('expected {} to deeply equal { missingProperty: true }');
+      expect(reporter._testsuites[1].testsuite[1].testcase[1].failure._cdata).to.match(/AssertionError: expected {} to deeply equal {\s*missingProperty:\s*true\s*}\n(?:\s* at .*? \(.*?\)\n)*\n\s*\+ expected - actual\n\s*-{}\n\s*\+{\n\s*\+\s*"missingProperty":\s*true\n\s*\+}[\s\S]*/);
+      done();
+    });
+  });
+
   describe('when "useFullSuiteTitle" option is specified', function() {
     it('generates full suite title', function(done) {
       var reporter = createReporter({useFullSuiteTitle: true });
