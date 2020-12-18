@@ -10,7 +10,7 @@ module.exports = function(stats, options) {
           name: "Mocha Tests",
           tests: 4,
           failures: "2",
-          time: "432.1100"
+          time: ((stats.duration || 0) / 1000).toFixed(4)
         }
       },
       {
@@ -18,7 +18,7 @@ module.exports = function(stats, options) {
           {
             _attr: {
               name: "Root Suite",
-              timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+              timestamp: "1970-01-01T00:00:00", // ISO timestamp truncated to the second
               tests: "0",
               failures: "0",
               time: "0.0000"
@@ -31,10 +31,10 @@ module.exports = function(stats, options) {
           {
             _attr: {
               name: "Foo Bar",
-              timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+              timestamp: "1970-01-01T00:00:00",
               tests: "3",
               failures: "2",
-              time: "32.1060"
+              time: "100.0010"
             }
           },
           {
@@ -93,10 +93,10 @@ module.exports = function(stats, options) {
           {
             _attr: {
               name: "Another suite!",
-              timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+              timestamp: "1970-01-01T00:01:40", // new Date(100001).toISOString().slice(0, -5)
               tests: "1",
               failures: "0",
-              time: "400.0040"
+              time: "400.0050"
             }
           },
           {
@@ -144,7 +144,7 @@ module.exports = function(stats, options) {
         {
           _attr: {
             name: "Pending suite!",
-            timestamp: stats.start.toISOString().substr(0,stats.start.toISOString().indexOf('.')),
+            timestamp: "1970-01-01T00:08:20", // new Date(100001 + 400005).toISOString().slice(0, -5)
             tests: "1",
             failures: "0",
             skipped: "1",

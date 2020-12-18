@@ -13,6 +13,7 @@ var rimraf = require('rimraf');
 
 var chai = require('chai');
 var expect = chai.expect;
+var FakeTimer = require('@sinonjs/fake-timers');
 var xmllint = require('xmllint');
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
@@ -63,7 +64,7 @@ describe('mocha-junit-reporter', function() {
     return test;
   }
 
-  function executeTestRunner(runner, options, callback) {
+  function runTests(reporter, options, callback) {
     if (!callback) {
       callback = options;
       options = null;
@@ -72,6 +73,7 @@ describe('mocha-junit-reporter', function() {
     options.invalidChar = options.invalidChar || '';
     options.title = options.title || 'Foo Bar';
 
+    var runner = reporter.runner;
     var rootSuite = runner.suite;
 
     var suite1 = Suite.create(rootSuite, options.title);
@@ -99,6 +101,22 @@ describe('mocha-junit-reporter', function() {
       var pendingSuite = Suite.create(rootSuite, 'Pending suite!');
       pendingSuite.addTest(createTest('pending', null, null));
     }
+
+    var _onSuiteEnd = reporter._onSuiteEnd.bind(reporter);
+
+    reporter._onSuiteEnd = function(suite) {
+      if (suite === rootSuite) {
+        // root suite took no time to execute
+        reporter._Date.clock.tick(0);
+      } else if (suite === suite1) {
+        // suite1 took an arbitrary amount of time that includes time to run each test + setup and teardown
+        reporter._Date.clock.tick(100001);
+      } else if (suite === suite2) {
+        reporter._Date.clock.tick(400005);
+      }
+
+      return _onSuiteEnd(suite);
+    };
 
     runRunner(runner, callback);
   }
@@ -147,7 +165,10 @@ describe('mocha-junit-reporter', function() {
       allowUncaught: true
     });
 
-    return new mocha._reporter(createRunner(), { reporterOptions: options });
+    return new mocha._reporter(createRunner(), {
+      reporterOptions: options,
+      Date: FakeTimer.createClock(0).Date
+    });
   }
 
   function runRunner(runner, callback) {
@@ -201,7 +222,7 @@ describe('mocha-junit-reporter', function() {
 
   it('can produce a JUnit XML report', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, filePath);
       done();
     });
@@ -210,7 +231,7 @@ describe('mocha-junit-reporter', function() {
   it('respects `process.env.MOCHA_FILE`', function(done) {
     process.env.MOCHA_FILE = 'test/output/results.xml';
     var reporter = createReporter();
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, process.env.MOCHA_FILE);
       done();
     });
@@ -219,7 +240,7 @@ describe('mocha-junit-reporter', function() {
   it('respects `process.env.PROPERTIES`', function(done) {
     process.env.PROPERTIES = 'CUSTOM_PROPERTY:ABC~123';
     var reporter = createReporter({mochaFile: 'test/output/properties.xml'});
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, filePath, {
         properties: [
           {
@@ -234,7 +255,7 @@ describe('mocha-junit-reporter', function() {
 
   it('respects `--reporter-options mochaFile=`', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/results.xml'});
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, filePath);
       done();
     });
@@ -244,7 +265,7 @@ describe('mocha-junit-reporter', function() {
     var dir = 'test/output/';
     var path = dir + 'results.[hash].xml';
     var reporter = createReporter({mochaFile: path});
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, dir + getFileNameWithHash(dir));
       done();
     });
@@ -252,7 +273,7 @@ describe('mocha-junit-reporter', function() {
 
   it('will create intermediate directories', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/foo/mocha.xml'});
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, filePath);
       done();
     });
@@ -260,7 +281,7 @@ describe('mocha-junit-reporter', function() {
 
   it('creates valid XML report for invalid message', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
-    executeTestRunner(reporter.runner, {invalidChar: '\u001b'}, function() {
+    runTests(reporter, {invalidChar: '\u001b'}, function() {
       assertXmlEquals(reporter._xml, mockXml(reporter.runner.stats));
       done();
     });
@@ -268,7 +289,7 @@ describe('mocha-junit-reporter', function() {
 
   it('creates valid XML report even if title contains ANSI character sequences', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
-    executeTestRunner(reporter.runner, {title: '[38;5;104m[1mFoo Bar'}, function() {
+    runTests(reporter, {title: '[38;5;104m[1mFoo Bar'}, function() {
       verifyMochaFile(reporter.runner, filePath);
       done();
     });
@@ -276,7 +297,7 @@ describe('mocha-junit-reporter', function() {
 
   it('outputs pending tests if "includePending" is specified', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/mocha.xml', includePending: true});
-    executeTestRunner(reporter.runner, {includePending: true}, function() {
+    runTests(reporter, {includePending: true}, function() {
       verifyMochaFile(reporter.runner, filePath);
       done();
     });
@@ -286,7 +307,7 @@ describe('mocha-junit-reporter', function() {
     var reporter = createReporter({mochaFile: 'test/output/console.xml', toConsole: true});
 
     var stdout = mockStdout();
-    executeTestRunner(reporter.runner, function() {
+    runTests(reporter, function() {
       verifyMochaFile(reporter.runner, filePath);
 
       var xml = stdout.output[0];
@@ -325,7 +346,7 @@ describe('mocha-junit-reporter', function() {
   describe('when "useFullSuiteTitle" option is specified', function() {
     it('generates full suite title', function(done) {
       var reporter = createReporter({useFullSuiteTitle: true });
-      executeTestRunner(reporter.runner, function() {
+      runTests(reporter, function() {
         expect(suiteName(reporter._testsuites[0])).to.equal('');
         expect(suiteName(reporter._testsuites[1])).to.equal('Root Suite Foo Bar');
         expect(suiteName(reporter._testsuites[2])).to.equal('Root Suite Another suite!');
@@ -335,7 +356,7 @@ describe('mocha-junit-reporter', function() {
 
     it('generates full suite title separated by "suiteTitleSeparatedBy" option', function(done) {
       var reporter = createReporter({useFullSuiteTitle: true, suiteTitleSeparatedBy: '.'});
-      executeTestRunner(reporter.runner, function() {
+      runTests(reporter, function() {
         expect(suiteName(reporter._testsuites[0])).to.equal('');
         expect(suiteName(reporter._testsuites[1])).to.equal('Root Suite.Foo Bar');
         expect(suiteName(reporter._testsuites[2])).to.equal('Root Suite.Another suite!');
