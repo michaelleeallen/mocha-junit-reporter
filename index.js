@@ -469,9 +469,6 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
         failures: stats.failures
       }
     };
-    if (stats.pending) {
-      rootSuite._attr.skipped = stats.pending;
-    }
     testsuites = [ rootSuite ].concat(testsuites);
   }
 
