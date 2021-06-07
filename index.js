@@ -328,9 +328,18 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
         name: flipClassAndName ? classname : name,
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
         classname: flipClassAndName ? name : classname
+	//requirement: 'xpto'
+	//req: test._testConfig['tags']
+	//req: test._testConfig['requirement']
       }
     }]
   };
+
+  var requirement = (test._testConfig !== undefined) ? test._testConfig['requirement'] : undefined;
+  if (requirement !== undefined) {
+	testcase['testcase'][0]['_attr']['req'] = requirement;
+  } 
+  //console.log(test);
 
   // We need to merge console.logs and attachments into one <system-out> -
   //  see JUnit schema (only accepts 1 <system-out> per test).
