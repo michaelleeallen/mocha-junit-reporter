@@ -337,7 +337,7 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
 
   var requirement = (test._testConfig !== undefined) ? test._testConfig['requirement'] : test.fn['requirement'];
   if (requirement !== undefined) {
-	testcase['testcase'][0]['_attr']['req'] = requirement;
+	testcase['testcase'][0]['_attr']['requirement'] = requirement;
   } 
   //console.log(test);
 
