@@ -332,8 +332,8 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     }]
   };
 
-  var requirement = (test._testConfig !== undefined) ? test._testConfig['requirement'] : test.fn['requirement'];
-  if (requirement !== undefined) {
+  var requirement = (test._testConfig != null) ? test._testConfig['requirement'] : ((test.fn != null) ? test.fn['requirement'] : null);
+  if (requirement != null) {
 	testcase['testcase'][0]['_attr']['requirement'] = requirement;
   } 
 
