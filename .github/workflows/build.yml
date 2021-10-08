@@ -8,7 +8,23 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x]
+        include:
+          - mocha-version: 2
+            node-version: 10.x
+          - mocha-version: 3
+            node-version: 10.x
+          - mocha-version: 4
+            node-version: 10.x
+          - mocha-version: 5
+            node-version: 10.x
+          - mocha-version: 6
+            node-version: 10.x
+          - mocha-version: 7
+            node-version: 12.x
+          - mocha-version: 8
+            node-version: 14.x
+          - mocha-version: 9
+            node-version: 14.x
 
     steps:
     - uses: actions/checkout@v1
@@ -22,3 +38,4 @@ jobs:
       run: npm run ci
       env:
         CI: true
+        MOCHA_VERSION: ${{ matrix.mocha-version }}
