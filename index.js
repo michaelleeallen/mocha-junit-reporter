@@ -31,7 +31,7 @@ try {
   // eslint-disable-next-line no-console
   console.warn("Couldn't determine Mocha version");
 }
-module.exports = MochaJUnitReporter;
+
 
 // A subset of invalid characters as defined in http://www.w3.org/TR/xml/#charsets that can occur in e.g. stacktraces
 // regex lifted from https://github.com/MylesBorins/xml-sanitizer/ (licensed MIT)
@@ -197,306 +197,311 @@ function getJenkinsClassname (test, options) {
  * @param {EventEmitter} runner - the test runner
  * @param {Object} options - mocha options
  */
-function MochaJUnitReporter(runner, options) {
-  if (mocha6plus) {
-    createStatsCollector(runner);
-  }
-  this._options = configureDefaults(options);
-  this._runner = runner;
-  this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;
-  this._antId = 0;
-  this._Date = (options || {}).Date || Date;
+class MochaJUnitReporter extends Base {
+  constructor(runner, options) {
+    super(runner, options);
 
-  var testsuites = [];
-  this._testsuites = testsuites;
-
-  function lastSuite() {
-    return testsuites[testsuites.length - 1].testsuite;
-  }
-
-  // get functionality from the Base reporter
-  Base.call(this, runner);
-
-  // remove old results
-  this._runner.on('start', function() {
-    if (fs.existsSync(this._options.mochaFile)) {
-      debug('removing report file', this._options.mochaFile);
-      fs.unlinkSync(this._options.mochaFile);
+    if (mocha6plus) {
+      createStatsCollector(runner);
     }
-  }.bind(this));
+    this._options = configureDefaults(options);
+    this._runner = runner;
+    this._generateSuiteTitle = this._options.useFullSuiteTitle ? fullSuiteTitle : defaultSuiteTitle;
+    this._antId = 0;
+    this._Date = (options || {}).Date || Date;
 
-  this._onSuiteBegin = function(suite) {
-    if (!isInvalidSuite(suite)) {
-      testsuites.push(this.getTestsuiteData(suite));
+    var testsuites = [];
+    this._testsuites = testsuites;
+
+    function lastSuite() {
+      return testsuites[testsuites.length - 1].testsuite;
     }
-  };
 
-  this._runner.on('suite', function(suite) {
-    // allow tests to mock _onSuiteBegin
-    return this._onSuiteBegin(suite);
-  }.bind(this));
-
-  this._onSuiteEnd = function(suite) {
-    if (!isInvalidSuite(suite)) {
-      var testsuite = lastSuite();
-      if (testsuite) {
-        var start = testsuite[0]._attr.timestamp;
-        testsuite[0]._attr.time = this._Date.now() - start;
+    // remove old results
+    this._runner.on('start', function () {
+      if (fs.existsSync(this._options.mochaFile)) {
+        debug('removing report file', this._options.mochaFile);
+        fs.unlinkSync(this._options.mochaFile);
       }
+    }.bind(this));
+
+    this._onSuiteBegin = function (suite) {
+      if (!isInvalidSuite(suite)) {
+        testsuites.push(this.getTestsuiteData(suite));
+      }
+    };
+
+    this._runner.on('suite', function (suite) {
+      // allow tests to mock _onSuiteBegin
+      return this._onSuiteBegin(suite);
+    }.bind(this));
+
+    this._onSuiteEnd = function (suite) {
+      if (!isInvalidSuite(suite)) {
+        var testsuite = lastSuite();
+        if (testsuite) {
+          var start = testsuite[0]._attr.timestamp;
+          testsuite[0]._attr.time = this._Date.now() - start;
+        }
+      }
+    };
+
+    this._runner.on('suite end', function (suite) {
+      // allow tests to mock _onSuiteEnd
+      return this._onSuiteEnd(suite);
+    }.bind(this));
+
+    this._runner.on('pass', function (test) {
+      lastSuite().push(this.getTestcaseData(test));
+    }.bind(this));
+
+    this._runner.on('fail', function (test, err) {
+      lastSuite().push(this.getTestcaseData(test, err));
+    }.bind(this));
+
+    if (this._options.includePending) {
+      this._runner.on('pending', function (test) {
+        var testcase = this.getTestcaseData(test);
+
+        testcase.testcase.push({skipped: null});
+        lastSuite().push(testcase);
+      }.bind(this));
     }
-  };
 
-  this._runner.on('suite end', function(suite) {
-    // allow tests to mock _onSuiteEnd
-    return this._onSuiteEnd(suite);
-  }.bind(this));
-
-  this._runner.on('pass', function(test) {
-    lastSuite().push(this.getTestcaseData(test));
-  }.bind(this));
-
-  this._runner.on('fail', function(test, err) {
-    lastSuite().push(this.getTestcaseData(test, err));
-  }.bind(this));
-
-  if (this._options.includePending) {
-    this._runner.on('pending', function(test) {
-      var testcase = this.getTestcaseData(test);
-
-      testcase.testcase.push({ skipped: null });
-      lastSuite().push(testcase);
+    this._runner.on('end', function () {
+      this.flush(testsuites);
     }.bind(this));
   }
 
-  this._runner.on('end', function(){
-    this.flush(testsuites);
-  }.bind(this));
-}
+  /**
+   * Produces an xml node for a test suite
+   * @param  {Object} suite - a test suite
+   * @return {Object}       - an object representing the xml node
+   */
+  getTestsuiteData(suite) {
+    var antMode = this._options.antMode;
 
-/**
- * Produces an xml node for a test suite
- * @param  {Object} suite - a test suite
- * @return {Object}       - an object representing the xml node
- */
-MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
-  var antMode = this._options.antMode;
-
-  var _attr =  {
-    name: this._generateSuiteTitle(suite),
-    timestamp: this._Date.now(),
-    tests: suite.tests.length
-  };
-  var testSuite = { testsuite: [ { _attr: _attr } ] };
-
-
-  if(suite.file) {
-    testSuite.testsuite[0]._attr.file =  suite.file;
-  }
-
-  var properties = generateProperties(this._options);
-  if (properties.length || antMode) {
-    testSuite.testsuite.push({
-      properties: properties
-    });
-  }
-
-  if (antMode) {
-    _attr.package = _attr.name;
-    _attr.hostname = this._options.antHostname;
-    _attr.id = this._antId;
-    _attr.errors = 0;
-    this._antId += 1;
-  }
-
-  return testSuite;
-};
-
-/**
- * Produces an xml config for a given test case.
- * @param {object} test - test case
- * @param {object} err - if test failed, the failure object
- * @returns {object}
- */
-MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
-  var jenkinsMode = this._options.jenkinsMode;
-  var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
-  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test, this._options) : test.fullTitle());
-  var classname = stripAnsi(test.title);
-  var testcase = {
-    testcase: [{
-      _attr: {
-        name: flipClassAndName ? classname : name,
-        time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
-        classname: flipClassAndName ? name : classname
-      }
-    }]
-  };
-
-  // We need to merge console.logs and attachments into one <system-out> -
-  //  see JUnit schema (only accepts 1 <system-out> per test).
-  var systemOutLines = [];
-  if (this._options.outputs && (test.consoleOutputs && test.consoleOutputs.length > 0)) {
-    systemOutLines = systemOutLines.concat(test.consoleOutputs);
-  }
-  if (this._options.attachments && test.attachments && test.attachments.length > 0) {
-    systemOutLines = systemOutLines.concat(test.attachments.map(
-      function (file) {
-        return '[[ATTACHMENT|' + file + ']]';
-      }
-    ));
-  }
-  if (systemOutLines.length > 0) {
-    testcase.testcase.push({'system-out': this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
-  }
-
-  if (this._options.outputs && (test.consoleErrors && test.consoleErrors.length > 0)) {
-    testcase.testcase.push({'system-err': this.removeInvalidCharacters(stripAnsi(test.consoleErrors.join('\n')))});
-  }
-
-  if (err) {
-    var message;
-    if (err.message && typeof err.message.toString === 'function') {
-      message = err.message + '';
-    } else if (typeof err.inspect === 'function') {
-      message = err.inspect() + '';
-    } else {
-      message = '';
-    }
-    var failureMessage = err.stack || message;
-    var failureElement = {
-      _attr: {
-        message: this.removeInvalidCharacters(message) || '',
-        type: err.name || ''
-      },
-      _cdata: this.removeInvalidCharacters(failureMessage)
+    var _attr = {
+      name: this._generateSuiteTitle(suite),
+      timestamp: this._Date.now(),
+      tests: suite.tests.length
     };
-
-    testcase.testcase.push({failure: failureElement});
-  }
-  return testcase;
-};
-
-/**
- * @param {string} input
- * @returns {string} without invalid characters
- */
-MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
-  if (!input) {
-    return input;
-  }
-  return input.replace(INVALID_CHARACTERS_REGEX, '');
-};
-
-/**
- * Writes xml to disk and ouputs content if "toConsole" is set to true.
- * @param {Array.<Object>} testsuites - a list of xml configs
- */
-MochaJUnitReporter.prototype.flush = function(testsuites){
-  this._xml = this.getXml(testsuites);
-
-  this.writeXmlToDisk(this._xml, this._options.mochaFile);
-
-  if (this._options.toConsole === true) {
-    console.log(this._xml); // eslint-disable-line no-console
-  }
-};
+    var testSuite = {testsuite: [{_attr: _attr}]};
 
 
-/**
- * Produces an XML string from the given test data.
- * @param {Array.<Object>} testsuites - a list of xml configs
- * @returns {string}
- */
-MochaJUnitReporter.prototype.getXml = function(testsuites) {
-  var totalTests = 0;
-  var stats = this._runner.stats;
-  var antMode = this._options.antMode;
-  var hasProperties = (!!this._options.properties) || antMode;
-  var Date = this._Date;
+    if (suite.file) {
+      testSuite.testsuite[0]._attr.file = suite.file;
+    }
 
-  testsuites.forEach(function(suite) {
-    var _suiteAttr = suite.testsuite[0]._attr;
-    // testsuite is an array: [attrs, properties?, testcase, testcase, …]
-    // we want to make sure that we are grabbing test cases at the correct index
-    var _casesIndex = hasProperties ? 2 : 1;
-    var _cases = suite.testsuite.slice(_casesIndex);
-    var missingProps;
-
-    // suiteTime has unrounded time as a Number of milliseconds
-    var suiteTime = _suiteAttr.time;
-
-    _suiteAttr.time = (suiteTime / 1000 || 0).toFixed(4);
-    _suiteAttr.timestamp = new Date(_suiteAttr.timestamp).toISOString().slice(0, -5);
-    _suiteAttr.failures = 0;
-    _suiteAttr.skipped = 0;
-
-    _cases.forEach(function(testcase) {
-      var lastNode = testcase.testcase[testcase.testcase.length - 1];
-
-      _suiteAttr.skipped += Number('skipped' in lastNode);
-      _suiteAttr.failures += Number('failure' in lastNode);
-      testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(4);
-    });
+    var properties = generateProperties(this._options);
+    if (properties.length || antMode) {
+      testSuite.testsuite.push({
+        properties: properties
+      });
+    }
 
     if (antMode) {
-      missingProps = ['system-out', 'system-err'];
-      suite.testsuite.forEach(function(item) {
-        missingProps = missingProps.filter(function(prop) {
-          return !item[prop];
-        });
-      });
-      missingProps.forEach(function(prop) {
-        var obj = {};
-        obj[prop] = [];
-        suite.testsuite.push(obj);
-      });
+      _attr.package = _attr.name;
+      _attr.hostname = this._options.antHostname;
+      _attr.id = this._antId;
+      _attr.errors = 0;
+      this._antId += 1;
     }
 
-    if (!_suiteAttr.skipped) {
-      delete _suiteAttr.skipped;
-    }
+    return testSuite;
+  }
 
-    totalTests += _suiteAttr.tests;
-  });
+  /**
+   * Produces an xml config for a given test case.
+   * @param {object} test - test case
+   * @param {object} err - if test failed, the failure object
+   * @returns {object}
+   */
 
-
-  if (!antMode) {
-    var rootSuite = {
-      _attr: {
-        name: this._options.testsuitesTitle,
-        time: (stats.duration / 1000 || 0).toFixed(4),
-        tests: totalTests,
-        failures: stats.failures
-      }
+  getTestcaseData(test, err) {
+    var jenkinsMode = this._options.jenkinsMode;
+    var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
+    var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test, this._options) : test.fullTitle());
+    var classname = stripAnsi(test.title);
+    var testcase = {
+      testcase: [{
+        _attr: {
+          name: flipClassAndName ? classname : name,
+          time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
+          classname: flipClassAndName ? name : classname
+        }
+      }]
     };
-    if (stats.pending) {
-      rootSuite._attr.skipped = stats.pending;
+
+    // We need to merge console.logs and attachments into one <system-out> -
+    //  see JUnit schema (only accepts 1 <system-out> per test).
+    var systemOutLines = [];
+    if (this._options.outputs && (test.consoleOutputs && test.consoleOutputs.length > 0)) {
+      systemOutLines = systemOutLines.concat(test.consoleOutputs);
     }
-    testsuites = [ rootSuite ].concat(testsuites);
+    if (this._options.attachments && test.attachments && test.attachments.length > 0) {
+      systemOutLines = systemOutLines.concat(test.attachments.map(
+        function (file) {
+          return '[[ATTACHMENT|' + file + ']]';
+        }
+      ));
+    }
+    if (systemOutLines.length > 0) {
+      testcase.testcase.push({'system-out': this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
+    }
+
+    if (this._options.outputs && (test.consoleErrors && test.consoleErrors.length > 0)) {
+      testcase.testcase.push({'system-err': this.removeInvalidCharacters(stripAnsi(test.consoleErrors.join('\n')))});
+    }
+
+    if (err) {
+      var message;
+      if (err.message && typeof err.message.toString === 'function') {
+        message = err.message + '';
+      } else if (typeof err.inspect === 'function') {
+        message = err.inspect() + '';
+      } else {
+        message = '';
+      }
+      var failureMessage = err.stack || message;
+      var failureElement = {
+        _attr: {
+          message: this.removeInvalidCharacters(message) || '',
+          type: err.name || ''
+        },
+        _cdata: this.removeInvalidCharacters(failureMessage)
+      };
+
+      testcase.testcase.push({failure: failureElement});
+    }
+    return testcase;
   }
 
-  return xml({ testsuites: testsuites }, { declaration: true, indent: '  ' });
-};
+  /**
+   * @param {string} input
+   * @returns {string} without invalid characters
+   */
 
-/**
- * Writes a JUnit test report XML document.
- * @param {string} xml - xml string
- * @param {string} filePath - path to output file
- */
-MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
-  if (filePath) {
-    if (filePath.indexOf('[hash]') !== -1) {
-      filePath = filePath.replace('[hash]', md5(xml));
+  removeInvalidCharacters(input) {
+    if (!input) {
+      return input;
+    }
+    return input.replace(INVALID_CHARACTERS_REGEX, '');
+  }
+
+  /**
+   * Writes xml to disk and ouputs content if "toConsole" is set to true.
+   * @param {Array.<Object>} testsuites - a list of xml configs
+   */
+  flush(testsuites) {
+    this._xml = this.getXml(testsuites);
+
+    this.writeXmlToDisk(this._xml, this._options.mochaFile);
+
+    if (this._options.toConsole === true) {
+      console.log(this._xml); // eslint-disable-line no-console
+    }
+  }
+
+
+  /**
+   * Produces an XML string from the given test data.
+   * @param {Array.<Object>} testsuites - a list of xml configs
+   * @returns {string}
+   */
+  getXml(testsuites) {
+    var totalTests = 0;
+    var stats = this._runner.stats;
+    var antMode = this._options.antMode;
+    var hasProperties = (!!this._options.properties) || antMode;
+    var Date = this._Date;
+
+    testsuites.forEach(function (suite) {
+      var _suiteAttr = suite.testsuite[0]._attr;
+      // testsuite is an array: [attrs, properties?, testcase, testcase, …]
+      // we want to make sure that we are grabbing test cases at the correct index
+      var _casesIndex = hasProperties ? 2 : 1;
+      var _cases = suite.testsuite.slice(_casesIndex);
+      var missingProps;
+
+      // suiteTime has unrounded time as a Number of milliseconds
+      var suiteTime = _suiteAttr.time;
+
+      _suiteAttr.time = (suiteTime / 1000 || 0).toFixed(4);
+      _suiteAttr.timestamp = new Date(_suiteAttr.timestamp).toISOString().slice(0, -5);
+      _suiteAttr.failures = 0;
+      _suiteAttr.skipped = 0;
+
+      _cases.forEach(function (testcase) {
+        var lastNode = testcase.testcase[testcase.testcase.length - 1];
+
+        _suiteAttr.skipped += Number('skipped' in lastNode);
+        _suiteAttr.failures += Number('failure' in lastNode);
+        testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(4);
+      });
+
+      if (antMode) {
+        missingProps = ['system-out', 'system-err'];
+        suite.testsuite.forEach(function (item) {
+          missingProps = missingProps.filter(function (prop) {
+            return !item[prop];
+          });
+        });
+        missingProps.forEach(function (prop) {
+          var obj = {};
+          obj[prop] = [];
+          suite.testsuite.push(obj);
+        });
+      }
+
+      if (!_suiteAttr.skipped) {
+        delete _suiteAttr.skipped;
+      }
+
+      totalTests += _suiteAttr.tests;
+    });
+
+
+    if (!antMode) {
+      var rootSuite = {
+        _attr: {
+          name: this._options.testsuitesTitle,
+          time: (stats.duration / 1000 || 0).toFixed(4),
+          tests: totalTests,
+          failures: stats.failures
+        }
+      };
+      if (stats.pending) {
+        rootSuite._attr.skipped = stats.pending;
+      }
+      testsuites = [rootSuite].concat(testsuites);
     }
 
-    debug('writing file to', filePath);
-    mkdirp.sync(path.dirname(filePath));
+    return xml({testsuites: testsuites}, {declaration: true, indent: '  '});
+  }
 
-    try {
+  /**
+   * Writes a JUnit test report XML document.
+   * @param {string} xml - xml string
+   * @param {string} filePath - path to output file
+   */
+  writeXmlToDisk(xml, filePath) {
+    if (filePath) {
+      if (filePath.indexOf('[hash]') !== -1) {
+        filePath = filePath.replace('[hash]', md5(xml));
+      }
+
+      debug('writing file to', filePath);
+      mkdirp.sync(path.dirname(filePath));
+
+      try {
         fs.writeFileSync(filePath, xml, 'utf-8');
-    } catch (exc) {
+      } catch (exc) {
         debug('problem writing results: ' + exc);
+      }
+      debug('results written successfully');
     }
-    debug('results written successfully');
   }
-};
+}
+
+module.exports = MochaJUnitReporter;
