@@ -76,6 +76,94 @@ var mocha = new Mocha({
 })
 ```
 
+### Append properties to testcase
+
+You can provide metadata for each testcase, i.e., properties for each `testcase`.
+Some tools (e.g., Xray) may take advantage of this to provide additional information related to the execution of each testcase or to perform other operations while importing test results (e.g., linking results to existing test cases or stories on some tool, such as Jira).
+
+Zero, one or more properties may be provided using this metadata. You can use whatever name and attributes for the properties.
+
+Properties can be defined by:
+
+- a name (string) and an inline value (string)
+- a name (string) and a content (multiline string)
+- or a name (string), and a set of objects having one or more attributes, and optionally content
+
+```xml
+<testsuites>
+  <testsuite>
+    <testcase name="should do some stuff" time="1.7390" classname="demo">
+      <properties>
+        <property name="test_key" value="CALC-1"/>
+        <property name="test_description"><![CDATA[a sample test]]></property>
+        <property name="testrun_evidence">
+          <item name="dummy-evidence1.txt"><![CDATA[aGVsbG8=]]></item>
+          <item name="dummy-evidence2.txt"><![CDATA[d29ybGQ=]]></item>
+        </property>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+To do so, set them on the test object using `testCaseMetadata`.
+The syntax is pretty straighforward: the root keys on the `testCaseMetadata` object are mapped to properties, where the key is mapped directly to the `name` attribute. If it holds a string value, then it's mapped to the `value` attribute on the corresponding `property` element; if it holds an object having `_cdata`, then the content will be stored as cdata on the corresponding `property. A more complex scenario is supported, in the case you want to pass a property containing an array of objecs; in this case, the root key will be mapped to a XML element and its keys will be mapped with to attributes on that element.
+
+`_cdata` is a special attribute name that will be used internally as a way to signal that we want to embed its value as cdata content on the corresponding XML element, instead of being mapped to an attribute.
+
+As an example that showcases the different type of properties, in mocha this would be something like:
+
+```javascript
+  it('should do some stuff', function() {
+          this.testCaseMetadata = {
+              test_key: 'CALC-1',
+              test_description: { _cdata: 'a sample test' },
+              testrun_evidence: [
+                { item: { name: "dummy-evidence1.txt", _cdata: 'aGVsbG8=' }},
+                { item: { name: "dummy-evidence2.txt", _cdata: 'd29ybGQ=' }}
+              ]
+            };
+          ...
+  });
+```
+
+If using Cypress, this could be added directly as the second argument (i.e., the test configuration) on the `it()` block; mocha by itself doesn't provide this facility as shown above though.
+
+```javascript
+  it('should do some stuff', { testCaseMetadata: {
+              test_key: 'CALC-1',
+              test_description: { _cdata: 'a sample test' },
+              testrun_evidence: [
+                { item: { name: "dummy-evidence1.txt", _cdata: 'aGVsbG8=' }},
+                { item: { name: "dummy-evidence2.txt", _cdata: 'd29ybGQ=' }}
+              ]
+            }}, function() {
+
+          cy.visit('http://www.example.com');
+          ...
+  });
+```
+
+Most probably, your calls will be much simpler as you may need just to simple pass a property and its value, as shown in the following examples.
+
+mocha:
+
+```javascript
+  it('should do some stuff', function() {
+    this.testCaseMetadata = { test_key: 'CALC-1'};
+    ...
+  });
+```
+
+Cypress:
+
+```javascript
+  it('should do some stuff', { testCaseMetadata: { test_key: 'CALC-1'} }, function() {
+          cy.visit('http://www.example.com');
+          ...
+  });
+```
+
 ### Results Report
 
 Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files.

@@ -311,6 +311,11 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
   return testSuite;
 };
 
+function getTestCaseMetadata (test) {
+  // in pure mocha this is obtained from the test object context; in Cypress, test metadata is stored in the ._testConfig.unverifiedTestConfig
+  return (test._testConfig && test._testConfig.unverifiedTestConfig && test._testConfig.unverifiedTestConfig.testCaseMetadata) ? test._testConfig.unverifiedTestConfig.testCaseMetadata : ((test.ctx  && test.ctx.testCaseMetadata) ? test.ctx.testCaseMetadata : null);
+}
+
 /**
  * Produces an xml config for a given test case.
  * @param {object} test - test case
@@ -332,10 +337,85 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     }]
   };
 
-  var requirement = (test._testConfig != null) ? test._testConfig['requirement'] : ((test.fn != null) ? test.fn['requirement'] : null);
-  if (requirement != null) {
-	testcase['testcase'][0]['_attr']['requirement'] = requirement;
-  } 
+  var testCaseMetadata = getTestCaseMetadata(test);
+  if (testCaseMetadata) {
+    /*
+      Additional testcase metadata can be processed and embed on the JUnit XML report, as properties on the <testcase> element
+      Xray provides support for processing some of these information (https://docs.getxray.app/display/XRAYCLOUD/Taking+advantage+of+JUnit+XML+reports), others may follow.
+      The following code provides a more or less generic approach to provide properties for the testcase:
+      - based on a property name and value
+      - based on a property name and bulk content
+      - based on a property name and a array of elements, each one with attributes
+    */
+
+    var properties = [];
+    for (var key in testCaseMetadata) {
+      if (typeof testCaseMetadata[key] === 'string') {
+        // if the metadata has a key whose value contains a string, then the property is named by the key
+        // and has a "value" attribute based on its value
+        //  e.g. { test_key: 'CALC-1' }
+
+        properties.push({ property: { _attr: { name: key, value: testCaseMetadata[key] } } });
+      } else if (testCaseMetadata[key] instanceof Array) {
+        /*
+         if the metadata has a key whose value contains a array, then each element is in turn a object,
+         of a specific type/name, with attributes and cdata
+
+          e.g.
+           {
+            testrun_evidence: [
+              { item: { name: "dummy-evidence1.txt", _cdata: 'aGVsbG8=' }},
+              { item: { name: "dummy-evidence2.txt", _cdata: 'd29ybGQ=' }}
+            ]
+           }
+        */
+
+        // array with properly formatted elements that can be serialized to XML 
+        var items = [];
+
+        // process all objects and convert each one to a XML element
+        // object attributes are mapped to attributes on the XML element, except for "_cdata" which is mapped to cdata
+        for (var idx = 0; idx < testCaseMetadata[key].length; idx++) {
+          var item = testCaseMetadata[key][idx];
+
+          // the XML element tag name is the only attribute on the object belonging to the array based property
+          var itemTag = Object.keys(item)[0];
+
+          // prepare a object that can be serialized to XML in the format of:
+          //   <itemTag attr1="..." attrN="...""><![CDATA[...]]></itemTag>
+          var itemElem = {};
+          itemElem[itemTag] = {};
+          itemElem[itemTag]._attr = {};
+          for (var attr in item[itemTag]) {
+            if (attr === '_cdata') {
+              itemElem[itemTag]._cdata = item[itemTag][attr];
+            } else {
+              itemElem[itemTag]._attr[attr] = item[itemTag][attr];
+            }
+          }
+
+          // save it to the list of XML elements
+          items.push(itemElem);
+        }
+        var multiElemProperty = { property: items };
+        multiElemProperty.property.unshift({ _attr: { name: key} });
+        properties.push(multiElemProperty);
+      } else if (typeof testCaseMetadata[key] === 'object') {
+        // if it's an object, non-Array nor string, then it's a property with built-in content to be embed as cdata
+        // note: a mix of cdata and standard attributes is not supported
+        // e.g. { test_description: { _cdata: 'a sample test' } }
+
+        var _cdata = testCaseMetadata[key]._cdata;
+        if (_cdata) {
+          properties.push({ property: { _attr: { name: key }, _cdata: this.removeInvalidCharacters(_cdata) } });
+        }
+      }
+    }
+
+    if (properties.length > 0) {
+      testcase.testcase.push({properties: properties});
+    }
+  }
 
   // We need to merge console.logs and attachments into one <system-out> -
   //  see JUnit schema (only accepts 1 <system-out> per test).
