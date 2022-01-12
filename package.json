@@ -1,6 +1,6 @@
 {
   "name": "mocha-junit-reporter",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,15 @@
     "chai": "^3.0.0",
     "chai-xml": "^0.3.0",
     "eslint": "^7.0.0",
-    "mocha": "^7.2.0",
+    "mocha": "^9.1.2",
+    "mocha2": "npm:mocha@2.2.5",
+    "mocha3": "npm:mocha@^3.0.0",
+    "mocha4": "npm:mocha@^4.0.0",
+    "mocha5": "npm:mocha@^5.0.0",
+    "mocha6": "npm:mocha@^6.0.0",
+    "mocha7": "npm:mocha@^7.2.0",
+    "mocha8": "npm:mocha@^8.4.0",
+    "mocha9": "npm:mocha@^9.1.2",
     "rimraf": "^3.0.2",
     "test-console": "^1.0.0",
     "xmllint": "^0.1.1"
@@ -37,7 +45,7 @@
     "debug": "^2.2.0",
     "md5": "^2.1.0",
     "mkdirp": "~0.5.1",
-    "strip-ansi": "^4.0.0",
+    "strip-ansi": "^6.0.1",
     "xml": "^1.0.0"
   },
   "peerDependencies": {

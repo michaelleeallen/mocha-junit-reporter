@@ -448,6 +448,12 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       message = '';
     }
     var failureMessage = err.stack || message;
+    if (!Base.hideDiff && err.expected !== undefined) {
+        var oldUseColors = Base.useColors;
+        Base.useColors = false;
+        failureMessage += "\n" + Base.generateDiff(err.actual, err.expected);
+        Base.useColors = oldUseColors;
+    }
     var failureElement = {
       _attr: {
         message: this.removeInvalidCharacters(message) || '',
@@ -510,7 +516,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     // suiteTime has unrounded time as a Number of milliseconds
     var suiteTime = _suiteAttr.time;
 
-    _suiteAttr.time = (suiteTime / 1000 || 0).toFixed(4);
+    _suiteAttr.time = (suiteTime / 1000 || 0).toFixed(3);
     _suiteAttr.timestamp = new Date(_suiteAttr.timestamp).toISOString().slice(0, -5);
     _suiteAttr.failures = 0;
     _suiteAttr.skipped = 0;
@@ -520,7 +526,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
 
       _suiteAttr.skipped += Number('skipped' in lastNode);
       _suiteAttr.failures += Number('failure' in lastNode);
-      testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(4);
+      testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(3);
     });
 
     if (antMode) {
@@ -549,7 +555,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     var rootSuite = {
       _attr: {
         name: this._options.testsuitesTitle,
-        time: (stats.duration / 1000 || 0).toFixed(4),
+        time: (stats.duration / 1000 || 0).toFixed(3),
         tests: totalTests,
         failures: stats.failures
       }

@@ -2,7 +2,9 @@
 'use strict';
 
 var Reporter = require('../index');
-var Mocha = require('mocha');
+
+var mochaVersion = process.env.MOCHA_VERSION || '';
+var Mocha = require('mocha' + mochaVersion);
 var Runner = Mocha.Runner;
 var Suite = Mocha.Suite;
 var Test = Mocha.Test;
@@ -151,7 +153,7 @@ describe('mocha-junit-reporter', function() {
 
     // We don't want Mocha to emit timeout errors.
     // If we want to simulate errors, we'll emit them ourselves.
-    rootSuite.enableTimeouts(false);
+    rootSuite.timeout(0);
 
     return new Runner(rootSuite);
   }
@@ -173,10 +175,12 @@ describe('mocha-junit-reporter', function() {
 
   function runRunner(runner, callback) {
     runner.run(function(failureCount) {
-      // Ensure uncaught exception handlers are cleared before we execute test assertions.
-      // Otherwise, this runner would intercept uncaught exceptions that were already handled by the mocha instance
-      // running our tests.
-      runner.dispose();
+      if (runner.dispose) {
+        // Ensure uncaught exception handlers are cleared before we execute test assertions.
+        // Otherwise, this runner would intercept uncaught exceptions that were already handled by the mocha instance
+        // running our tests.
+        runner.dispose();
+      }
 
       callback(failureCount);
     });
@@ -330,15 +334,47 @@ describe('mocha-junit-reporter', function() {
     suite2.addTest(createTest('test 2'));
 
     runRunner(reporter.runner, function() {
-      reporter.runner.dispose();
+      if (reporter.runner.dispose) {
+        reporter.runner.dispose();
+      }
+
       expect(reporter._testsuites).to.have.lengthOf(3);
       expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal('failing beforeAll');
       expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(2);
-      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('failing beforeAll "before all" hook: failing hook for "test 1"');
+
+      var failureMessage = 'failing beforeAll "before all" hook: failing hook';
+      if (!['2', '3', '4', '5'].includes(mochaVersion)) {
+        // newer versions of Mocha include the name of the test in the message
+        failureMessage += ' for "test 1"';
+      }
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(failureMessage);
       expect(reporter._testsuites[1].testsuite[1].testcase[1].failure._attr.message).to.equal('error in before');
       expect(reporter._testsuites[2].testsuite[0]._attr.name).to.equal('good suite');
       expect(reporter._testsuites[2].testsuite[1].testcase).to.have.lengthOf(1);
       expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('good suite test 2');
+      done();
+    });
+  });
+
+  it('properly diffs errors from Chai', function(done) {
+    var reporter = createReporter();
+    var rootSuite = reporter.runner.suite;
+    var suite1 = Suite.create(rootSuite, 'failing with Chai');
+    suite1.addTest(createTest('test 1', function () {
+      expect({}).to.deep.equal({missingProperty: true});
+    }));
+
+    runRunner(reporter.runner, function() {
+      if (reporter.runner.dispose) {
+        reporter.runner.dispose();
+      }
+
+      expect(reporter._testsuites).to.have.lengthOf(2);
+      expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal('failing with Chai');
+      expect(reporter._testsuites[1].testsuite[1].testcase).to.have.lengthOf(2);
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('failing with Chai test 1');
+      expect(reporter._testsuites[1].testsuite[1].testcase[1].failure._attr.message).to.equal('expected {} to deeply equal { missingProperty: true }');
+      expect(reporter._testsuites[1].testsuite[1].testcase[1].failure._cdata).to.match(/AssertionError: expected {} to deeply equal {\s*missingProperty:\s*true\s*}\n(?:\s* at .*?\n)*\n\s*\+ expected - actual\n+\s*-{}\n\s*\+{\n\s*\+\s*"missingProperty":\s*true\n\s*\+}[\s\S]*/);
       done();
     });
   });
@@ -576,7 +612,12 @@ describe('mocha-junit-reporter', function() {
         expect(reporter._testsuites).to.have.lengthOf(1);
         expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('Root Suite');
         expect(reporter._testsuites[0].testsuite[1].testcase).to.have.lengthOf(1);
-        expect(reporter._testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal('test');
+
+        var expectedName = 'test';
+        if (['2', '3'].includes(mochaVersion)) {
+          expectedName = ' ' + expectedName;
+        }
+        expect(reporter._testsuites[0].testsuite[1].testcase[0]._attr.name).to.equal(expectedName);
         done();
       });
     });
