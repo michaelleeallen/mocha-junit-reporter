@@ -78,7 +78,15 @@ var mocha = new Mocha({
 
 ### Results Report
 
-Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files.
+Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files. In addition to this there are these placeholders can also be used:
+
+| placeholder         | output                                            |
+| ------------------- | ------------------------------------------------- |
+| `[testsuitesTitle]` | will be replaced by the `testsuitesTitle` setting |
+| `[rootSuiteTitle]`  | will be replaced by the `rootSuiteTitle` setting  |
+| `[suiteFilename]`   | will be replaced by the filename of the spec file |
+| `[suiteName]`       | will be replaced by the name the first test suite |
+
 
 In order to display full suite title (including parents) just specify `testsuitesTitle` option
 ```javascript
