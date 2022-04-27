@@ -714,11 +714,19 @@ describe('mocha-junit-reporter', function() {
       });
     });
 
-    it('generates Ant compatible XML when in antMode', function(done) {
+    it('generates Ant compatible XML when in antMode and suite has file attribute', test_ant_mode({suite_file: true}));
+
+    it('generates Ant compatible XML when in antMode', test_ant_mode({suite_file: false}));
+
+    function test_ant_mode(opts){
+      return function(done) {
       this.timeout(10000); // xmllint is very slow
 
       var reporter = createReporter({antMode: true});
       var rootSuite = reporter.runner.suite;
+      if(opts.suite_file){
+        rootSuite.file="some file"
+      }
 
       var suite1 = Suite.create(rootSuite, 'Inner Suite');
       suite1.addTest(createTest('test'));
@@ -735,7 +743,7 @@ describe('mocha-junit-reporter', function() {
 
         done();
       });
-    });
+    }};
 
     describe('Jenkins format', function () {
       it('generates Jenkins compatible classnames and suite name', function(done) {
