@@ -420,6 +420,8 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var hasProperties = (!!this._options.properties) || antMode;
   var Date = this._Date;
 
+  var suiteFileName = testsuites[0].testsuite[0]._attr.file;
+
   testsuites.forEach(function(suite) {
     var _suiteAttr = suite.testsuite[0]._attr;
     // testsuite is an array: [attrs, properties?, testcase, testcase, …]
@@ -435,6 +437,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     _suiteAttr.timestamp = new Date(_suiteAttr.timestamp).toISOString().slice(0, -5);
     _suiteAttr.failures = 0;
     _suiteAttr.skipped = 0;
+    _suiteAttr.file = suiteFileName;
 
     _cases.forEach(function(testcase) {
       var lastNode = testcase.testcase[testcase.testcase.length - 1];
