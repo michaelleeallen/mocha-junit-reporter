@@ -67,6 +67,7 @@ function configureDefaults(options) {
   config.attachments = getSetting(config.attachments, 'ATTACHMENTS', false);
   config.antMode = getSetting(config.antMode, 'ANT_MODE', false);
   config.jenkinsMode = getSetting(config.jenkinsMode, 'JENKINS_MODE', false);
+  config.circleCIMode = getSetting(config.circleCIMode, 'CIRCLE_CI_MODE', false);
   config.properties = getSetting(config.properties, 'PROPERTIES', null, parsePropertiesFromEnv);
   config.toConsole = !!config.toConsole;
   config.rootSuiteTitle = config.rootSuiteTitle || 'Root Suite';
@@ -416,9 +417,12 @@ MochaJUnitReporter.prototype.flush = function(testsuites){
 MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var totalTests = 0;
   var stats = this._runner.stats;
+  var circleCIMode = this._options.circleCIMode;
   var antMode = this._options.antMode;
   var hasProperties = (!!this._options.properties) || antMode;
   var Date = this._Date;
+
+  var suiteFileName = testsuites[0] && testsuites[0].testsuite[0] && testsuites[0].testsuite[0]._attr && testsuites[0].testsuite[0]._attr.file;
 
   testsuites.forEach(function(suite) {
     var _suiteAttr = suite.testsuite[0]._attr;
@@ -435,6 +439,10 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
     _suiteAttr.timestamp = new Date(_suiteAttr.timestamp).toISOString().slice(0, -5);
     _suiteAttr.failures = 0;
     _suiteAttr.skipped = 0;
+
+    if (circleCIMode) {
+      _suiteAttr.file = suiteFileName;
+    }
 
     _cases.forEach(function(testcase) {
       var lastNode = testcase.testcase[testcase.testcase.length - 1];

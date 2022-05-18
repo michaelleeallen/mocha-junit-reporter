@@ -77,6 +77,7 @@ describe('mocha-junit-reporter', function() {
 
     var runner = reporter.runner;
     var rootSuite = runner.suite;
+    rootSuite.file = "spec.js";
 
     var suite1 = Suite.create(rootSuite, options.title);
     suite1.addTest(createTest('can weez the juice', {
@@ -707,6 +708,29 @@ describe('mocha-junit-reporter', function() {
 
       runRunner(reporter.runner, function() {
         var schema = fs.readFileSync(path.join(__dirname, 'resources', 'jenkins-junit.xsd'));
+        var result = xmllint.validateXML({ xml: reporter._xml, schema: schema });
+        expect(result.errors).to.equal(null, JSON.stringify(result.errors));
+
+        done();
+      });
+    });
+
+    it('generates Circle CI compatible XML when in circleCIMode', function(done) {
+      this.timeout(10000); // xmllint is very slow
+
+      var reporter = createReporter({circleCIMode: true});
+      var rootSuite = reporter.runner.suite;
+
+      var suite1 = Suite.create(rootSuite, 'Inner Suite');
+      suite1.addTest(createTest('test'));
+
+      var suite2 = Suite.create(rootSuite, 'Another Suite');
+      suite2.addTest(createTest('test', function(done) {
+        done(new Error('failed test'));
+      }));
+
+      runRunner(reporter.runner, function() {
+        var schema = fs.readFileSync(path.join(__dirname, 'resources', 'circle-ci-junit.xsd'));
         var result = xmllint.validateXML({ xml: reporter._xml, schema: schema });
         expect(result.errors).to.equal(null, JSON.stringify(result.errors));
 

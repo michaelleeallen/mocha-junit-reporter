@@ -21,6 +21,7 @@ module.exports = function(stats, options) {
               timestamp: "1970-01-01T00:00:00", // ISO timestamp truncated to the second
               tests: "0",
               failures: "0",
+              file: "spec.js",
               time: "0.000"
             }
           }
