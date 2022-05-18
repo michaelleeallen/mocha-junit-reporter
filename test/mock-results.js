@@ -35,7 +35,6 @@ module.exports = function(stats, options) {
               timestamp: "1970-01-01T00:00:00",
               tests: "3",
               failures: "2",
-              file: "spec.js",
               time: "100.001"
             }
           },
@@ -98,7 +97,6 @@ module.exports = function(stats, options) {
               timestamp: "1970-01-01T00:01:40", // new Date(100001).toISOString().slice(0, -5)
               tests: "1",
               failures: "0",
-              file: "spec.js",
               time: "400.005"
             }
           },
