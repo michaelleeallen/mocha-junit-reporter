@@ -77,6 +77,7 @@ describe('mocha-junit-reporter', function() {
 
     var runner = reporter.runner;
     var rootSuite = runner.suite;
+    rootSuite.file = "spec.js";
 
     var suite1 = Suite.create(rootSuite, options.title);
     suite1.addTest(createTest('can weez the juice', {
