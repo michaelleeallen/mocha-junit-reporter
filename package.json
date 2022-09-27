@@ -28,7 +28,7 @@
     "chai": "^3.0.0",
     "chai-xml": "^0.3.0",
     "eslint": "^7.0.0",
-    "mocha": "^9.1.2",
+    "mocha": "^10.0.0",
     "mocha2": "npm:mocha@2.2.5",
     "mocha3": "npm:mocha@^3.0.0",
     "mocha4": "npm:mocha@^4.0.0",
