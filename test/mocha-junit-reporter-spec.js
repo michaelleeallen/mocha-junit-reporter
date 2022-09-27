@@ -234,8 +234,8 @@ describe('mocha-junit-reporter', function() {
   });
 
   it('can handle getXml being called twice', function() {
-    const reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
-    const testsuites = mockJunitSuites.withStringTimes();
+    var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
+    var testsuites = mockJunitSuites.withStringTimes();
     reporter.getXml(testsuites);
   })
 
