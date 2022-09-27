@@ -444,7 +444,9 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
 
       _suiteAttr.skipped += Number('skipped' in lastNode);
       _suiteAttr.failures += Number('failure' in lastNode);
-      testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(3);
+      if (typeof testcase.testcase[0]._attr.time === 'number') {
+        testcase.testcase[0]._attr.time = testcase.testcase[0]._attr.time.toFixed(3);
+      }
     });
 
     if (antMode) {
