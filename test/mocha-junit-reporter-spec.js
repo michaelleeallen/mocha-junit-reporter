@@ -761,6 +761,29 @@ describe('mocha-junit-reporter', function() {
           done();
         });
       });
+      it('prefix is added to a classname when jenkinsClassnamePrefix is specified', function(done) {
+        var reporter = createReporter({jenkinsMode: true,  jenkinsClassnamePrefix: "Added Prefix"});
+        var rootSuite = reporter.runner.suite;
+
+        var suite1 = Suite.create(rootSuite, 'Inner Suite');
+        suite1.addTest(createTest('test'));
+
+        var suite2 = Suite.create(suite1, 'Another Suite');
+        suite2.addTest(createTest('fail test', function(done) {
+          done(new Error('failed test'));
+        }));
+
+        runRunner(reporter.runner, function() {
+          expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('');
+          expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('test');
+          expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.classname).to.equal('Added Prefix.Inner Suite');
+          expect(reporter._testsuites[2].testsuite[0]._attr.name).to.equal('Root Suite.Inner Suite.Another Suite');
+          expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('fail test');
+          expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.classname).to.equal('Added Prefix.Inner Suite.Another Suite');
+
+          done();
+        });
+      });
     });
   });
 });
