@@ -19,6 +19,7 @@ var FakeTimer = require('@sinonjs/fake-timers');
 var xmllint = require('xmllint');
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
+var mockJunitSuites = require('./mock-junit-suites');
 var testConsole = require('test-console');
 
 var debug = require('debug')('mocha-junit-reporter:tests');
@@ -231,6 +232,12 @@ describe('mocha-junit-reporter', function() {
       done();
     });
   });
+
+  it('can handle getXml being called twice', function() {
+    const reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
+    const testsuites = mockJunitSuites.withStringTimes();
+    reporter.getXml(testsuites);
+  })
 
   it('respects `process.env.MOCHA_FILE`', function(done) {
     process.env.MOCHA_FILE = 'test/output/results.xml';
