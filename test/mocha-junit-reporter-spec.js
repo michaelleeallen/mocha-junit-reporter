@@ -237,7 +237,7 @@ describe('mocha-junit-reporter', function() {
     var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
     var testsuites = mockJunitSuites.withStringTimes();
     reporter.getXml(testsuites);
-  })
+  });
 
   it('respects `process.env.MOCHA_FILE`', function(done) {
     process.env.MOCHA_FILE = 'test/output/results.xml';
