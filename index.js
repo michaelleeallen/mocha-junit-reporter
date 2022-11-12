@@ -436,7 +436,7 @@ MochaJUnitReporter.prototype.formatReportFilename = function(xml, testsuites) {
   }
 
   return reportFilename;
-}
+};
 
 /**
  * Produces an XML string from the given test data.
