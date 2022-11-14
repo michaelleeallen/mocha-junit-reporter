@@ -282,6 +282,68 @@ describe('mocha-junit-reporter', function() {
     });
   });
 
+
+  it("respects `[testsuitesTitle]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[testsuitesTitle].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir + "results." + reporter._options.testsuitesTitle + ".xml"
+      );
+      done();
+    });
+  });
+
+  it("respects `[rootSuiteTitle]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[rootSuiteTitle].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir +
+          "results." +
+          reporter._testsuites[0].testsuite[0]._attr.name +
+          ".xml"
+      );
+      done();
+    });
+  });
+
+  it("respects `[suiteFilename]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[suiteFilename].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir +
+          "results." +
+          reporter._testsuites[0].testsuite[0]._attr.file +
+          ".xml"
+      );
+      done();
+    });
+  });
+
+  it("respects `[suiteName]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[suiteName].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir +
+          "results." +
+          reporter._testsuites[1].testsuite[0]._attr.name +
+          ".xml"
+      );
+      done();
+    });
+  });
+
   it('will create intermediate directories', function(done) {
     var reporter = createReporter({mochaFile: 'test/output/foo/mocha.xml'});
     runTests(reporter, function() {

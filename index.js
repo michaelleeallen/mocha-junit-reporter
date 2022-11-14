@@ -402,14 +402,44 @@ MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
  */
 MochaJUnitReporter.prototype.flush = function(testsuites){
   this._xml = this.getXml(testsuites);
+  
+  var reportFilename = this.formatReportFilename(this._xml, testsuites);
 
-  this.writeXmlToDisk(this._xml, this._options.mochaFile);
+  this.writeXmlToDisk(this._xml, reportFilename);
 
   if (this._options.toConsole === true) {
     console.log(this._xml); // eslint-disable-line no-console
   }
 };
 
+/**
+ * Formats the report filename by replacing placeholders
+ * @param {string} xml - xml string
+ * @param {Array.<Object>} testsuites - a list of xml configs
+ */
+MochaJUnitReporter.prototype.formatReportFilename = function(xml, testsuites) {
+
+  var reportFilename = this._options.mochaFile;
+
+  if (reportFilename.indexOf('[hash]') !== -1) {
+    reportFilename = reportFilename.replace('[hash]', md5(xml));
+  }
+
+  if (reportFilename.indexOf('[testsuitesTitle]') !== -1) {
+    reportFilename = reportFilename.replace('[testsuitesTitle]', this._options.testsuitesTitle);
+  }
+  if (reportFilename.indexOf('[rootSuiteTitle]') !== -1) {
+    reportFilename = reportFilename.replace('[rootSuiteTitle]', this._options.rootSuiteTitle);
+  }
+  if (reportFilename.indexOf('[suiteFilename]') !== -1) {
+    reportFilename = reportFilename.replace('[suiteFilename]', testsuites[0].testsuite[0]._attr.file);
+  }
+  if (reportFilename.indexOf('[suiteName]') !== -1) {
+    reportFilename = reportFilename.replace('[suiteName]', testsuites[1].testsuite[0]._attr.name);
+  }
+
+  return reportFilename;
+};
 
 /**
  * Produces an XML string from the given test data.
@@ -496,10 +526,6 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
  */
 MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
   if (filePath) {
-    if (filePath.indexOf('[hash]') !== -1) {
-      filePath = filePath.replace('[hash]', md5(xml));
-    }
-
     debug('writing file to', filePath);
     mkdirp.sync(path.dirname(filePath));
 
