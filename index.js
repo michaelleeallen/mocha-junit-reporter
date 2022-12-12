@@ -20,8 +20,8 @@ try {
   var json = JSON.parse(
     fs.readFileSync(path.dirname(require.resolve('mocha')) + "/package.json", "utf8")
   );
-  var version = json.version;
-  if (version >= "6") {
+  var version = json.version && json.version.split('.')[0];
+  if (version >= 6) {
     createStatsCollector = require("mocha/lib/stats-collector");
     mocha6plus = true;
   } else {
