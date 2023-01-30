@@ -621,6 +621,78 @@ describe('mocha-junit-reporter', function() {
     });
   });
 
+  it('adds test properties to xml report', function(done) {
+    var reporter = createReporter();
+    var test = createTest('has properties');
+    test.properties = [
+      { name: 'author', value: 'User' },
+      { name: 'priority', value: 'high' },
+      { name: 'reference', value: 'https://example.com/dashboard.png' },
+      { name: 'reference', value: 'https://example.com/users.png' },
+      { name: 'reference', value: 'https://example.com/error.png' },
+      { name: 'description', value: 'Multi-line properties with text values..', text: true },
+    ];
+
+    var suite = Suite.create(reporter.runner.suite, 'with test properties');
+    suite.addTest(test);
+
+    var expected = [
+      { property: { _attr: { name: 'author', value: 'User' } } },
+      { property: { _attr: { name: 'priority', value: 'high' } } },
+      { property: { _attr: { name: 'reference', value: 'https://example.com/dashboard.png' } } },
+      { property: { _attr: { name: 'reference', value: 'https://example.com/users.png' } } },
+      { property: { _attr: { name: 'reference', value: 'https://example.com/error.png' } } },
+      { property: { _attr: { name: 'description' }, _cdata: 'Multi-line properties with text values..'} },
+    ];
+
+    runRunner(reporter.runner, function() {
+      expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(2);
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(reporter._testsuites[1].testsuite[1].testcase[1].properties).to.deep.equal(expected);
+      expect(reporter._xml).to.include('<properties>');
+      expect(reporter._xml).to.include('<property name="author" value="User"/>');
+      expect(reporter._xml).to.include('<property name="priority" value="high"/>');
+      expect(reporter._xml).to.include('<property name="reference" value="https://example.com/dashboard.png"/>');
+      expect(reporter._xml).to.include('<property name="reference" value="https://example.com/users.png"/>');
+      expect(reporter._xml).to.include('<property name="reference" value="https://example.com/error.png"/>');
+      expect(reporter._xml).to.include('<property name="description"><![CDATA[Multi-line properties with text values..]]></property>');
+      expect(reporter._xml).to.include('</properties>');
+      done();
+    });
+  });
+
+  it('does not add test properties if no properties were passed', function(done) {
+    var reporter = createReporter();
+    var test = createTest('has properties');
+    var suite = Suite.create(reporter.runner.suite, 'with test properties');
+    suite.addTest(test);
+
+    runRunner(reporter.runner, function() {
+      expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(1);
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(reporter._xml).to.not.include('<properties>');
+      done();
+    });
+  });
+
+  it('does not add test properties if properties are empty', function(done) {
+    var reporter = createReporter();
+    var test = createTest('has properties');
+    test.properties = [];
+    var suite = Suite.create(reporter.runner.suite, 'with test properties');
+    suite.addTest(test);
+
+    runRunner(reporter.runner, function() {
+      expect(reporter._testsuites[1].testsuite[0]._attr.name).to.equal(suite.title);
+      expect(reporter._testsuites[1].testsuite[1].testcase).to.have.length(1);
+      expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal(test.fullTitle());
+      expect(reporter._xml).to.not.include('<properties>');
+      done();
+    });
+  });
+
   describe('Output', function() {
     it('skips suites with empty title', function(done) {
       var reporter = createReporter();
