@@ -37,9 +37,9 @@ or
 ```javascript
 var mocha = new Mocha({
     reporter: 'mocha-junit-reporter',
-    reporterOptions: {
-        mochaFile: './path_to_your/file.xml'
-    }
+    reporterOptions: [
+        'mochaFile=./path_to_your/file.xml'
+    ]
 });
 ```
 
