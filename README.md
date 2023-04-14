@@ -8,35 +8,35 @@ Produces JUnit-style XML test results.
 ## Installation
 
 ```shell
-$ npm install mocha-junit-reporter --save-dev
+$ npm install mocha-junit-reporter-gitlab --save-dev
 ```
 
 or as a global module
 ```shell
-$ npm install -g mocha-junit-reporter
+$ npm install -g mocha-junit-reporter-gitlab
 ```
 
 ## Usage
-Run mocha with `mocha-junit-reporter`:
+Run mocha with `mocha-junit-reporter-gitlab`:
 
 ```shell
-$ mocha test --reporter mocha-junit-reporter
+$ mocha test --reporter mocha-junit-reporter-gitlab
 ```
 This will output a results file at `./test-results.xml`.
 You may optionally declare an alternate location for results XML file by setting
 the environment variable `MOCHA_FILE` or specifying `mochaFile` in `reporterOptions`:
 
 ```shell
-$ MOCHA_FILE=./path_to_your/file.xml mocha test --reporter mocha-junit-reporter
+$ MOCHA_FILE=./path_to_your/file.xml mocha test --reporter mocha-junit-reporter-gitlab
 ```
 or
 ```shell
-$ mocha test --reporter mocha-junit-reporter --reporter-options mochaFile=./path_to_your/file.xml
+$ mocha test --reporter mocha-junit-reporter-gitlab --reporter-options mochaFile=./path_to_your/file.xml
 ```
 or
 ```javascript
 var mocha = new Mocha({
-    reporter: 'mocha-junit-reporter',
+    reporter: 'mocha-junit-reporter-gitlab',
     reporterOptions: {
         mochaFile: './path_to_your/file.xml'
     }
@@ -62,12 +62,12 @@ You can also add properties to the report under `testsuite`. This is useful if y
 
 To do so pass them in via env variable:
 ```shell
-PROPERTIES=BUILD_ID:4291 mocha test --reporter mocha-junit-reporter
+PROPERTIES=BUILD_ID:4291 mocha test --reporter mocha-junit-reporter-gitlab
 ```
 or
 ```javascript
 var mocha = new Mocha({
-    reporter: 'mocha-junit-reporter',
+    reporter: 'mocha-junit-reporter-gitlab',
     reporterOptions: {
         properties: {
             BUILD_ID: 4291
@@ -78,7 +78,7 @@ var mocha = new Mocha({
 
 ### Results Report
 
-Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files. In addition to this these placeholders can also be used:
+Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter-gitlab`'s writing test results in separate files. In addition to this these placeholders can also be used:
 
 | placeholder         | output                                            |
 | ------------------- | ------------------------------------------------- |
@@ -91,7 +91,7 @@ Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[ha
 In order to display full suite title (including parents) just specify `testsuitesTitle` option
 ```javascript
 var mocha = new Mocha({
-    reporter: 'mocha-junit-reporter',
+    reporter: 'mocha-junit-reporter-gitlab',
     reporterOptions: {
         testsuitesTitle: true,
         suiteTitleSeparatedBy: '.' // suites separator, default is space (' '), or period ('.') in jenkins mode
@@ -103,7 +103,7 @@ If you want to **switch classname and name** of the generated testCase XML entri
 
 ```javascript
 var mocha = new Mocha({
-    reporter: 'mocha-junit-reporter',
+    reporter: 'mocha-junit-reporter-gitlab',
     reporterOptions: {
         testCaseSwitchClassnameAndName: true
     }
