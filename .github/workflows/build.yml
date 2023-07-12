@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        mocha-version: [8, 9, 10]
+        mocha-version: [6, 7, 8, 9]
         node-version: [16.x, 18.x, 20.x]
 
     steps:
