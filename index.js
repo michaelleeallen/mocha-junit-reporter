@@ -402,7 +402,7 @@ MochaJUnitReporter.prototype.removeInvalidCharacters = function(input){
  */
 MochaJUnitReporter.prototype.flush = function(testsuites){
   this._xml = this.getXml(testsuites);
-  
+
   var reportFilename = this.formatReportFilename(this._xml, testsuites);
 
   this.writeXmlToDisk(this._xml, reportFilename);
@@ -432,10 +432,10 @@ MochaJUnitReporter.prototype.formatReportFilename = function(xml, testsuites) {
     reportFilename = reportFilename.replace('[rootSuiteTitle]', this._options.rootSuiteTitle);
   }
   if (reportFilename.indexOf('[suiteFilename]') !== -1) {
-    reportFilename = reportFilename.replace('[suiteFilename]', testsuites[0]?.testsuite[0]?._attr.file ?? 'suiteFilename');
+    reportFilename = reportFilename.replace('[suiteFilename]', testsuites[0]?.testsuite[0]?._attr?.file ?? 'suiteFilename');
   }
   if (reportFilename.indexOf('[suiteName]') !== -1) {
-    reportFilename = reportFilename.replace('[suiteName]', testsuites[1]?.testsuite[0]?._attr.name ?? 'suiteName');
+    reportFilename = reportFilename.replace('[suiteName]', testsuites[1]?.testsuite[0]?._attr?.name ?? 'suiteName');
   }
 
   return reportFilename;
