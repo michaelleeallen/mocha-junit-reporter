@@ -356,6 +356,30 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     testcase.testcase.push({'system-err': this.removeInvalidCharacters(stripAnsi(test.consoleErrors.join('\n')))});
   }
 
+  if (test.properties && test.properties.length > 0) {
+    var properties = test.properties.map(function(property) {
+      if (property.text) {
+        return {
+          property: {
+            _attr: { name: this.removeInvalidCharacters(property.name) },
+            _cdata: this.removeInvalidCharacters(property.value)
+          }
+        };
+      } else {
+        return {
+          property: {
+            _attr: {
+              name: this.removeInvalidCharacters(property.name),
+              value: this.removeInvalidCharacters(property.value)
+            }
+          }
+        };
+      }
+    }, this);
+
+    testcase.testcase.push({'properties': properties});
+  }
+
   if (err) {
     var message;
     if (err.message && typeof err.message.toString === 'function') {

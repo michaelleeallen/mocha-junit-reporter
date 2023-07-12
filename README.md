@@ -185,6 +185,29 @@ output line 2
 [[ATTACHMENT|path/to/file]]</system-out>
 ```
 
+### Properties for test cases
+Properties can be attached to test objects as follows:
+
+```js
+it ('should include properties', function () {
+  this.test.properties = [
+    { name: 'author', value: 'User' },
+    { name: 'priority', value: 'high' },
+    { name: 'description', value: 'Multi-line properties with text values..', text: true },
+  ];
+});
+```
+
+Test case properties are useful to include additional meta information with tests that are displayed by various CI services and testing tools. Properties are included in the XML output under `testcase` elements like this:
+
+```xml
+<properties>
+  <property name="author" value="User"/>
+  <property name="priority" value="high"/>
+  <property name="description"><![CDATA[Multi-line properties with text values..]]></property>
+</properties>
+```
+
 ### Full configuration options
 
 | Parameter                      | Default                | Effect                                                                                                                  |
