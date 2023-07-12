@@ -321,7 +321,7 @@ describe('mocha-junit-reporter', function() {
         reporter.runner,
         dir +
           "results." +
-          (reporter._testsuites[0]?.testsuite[0]?._attr?.file ?? 'suiteFileName') +
+          (reporter._testsuites[0]?.testsuite[0]?._attr?.file ?? 'suiteFilename') +
           ".xml"
       );
       done();
