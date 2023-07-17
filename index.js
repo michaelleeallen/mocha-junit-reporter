@@ -292,7 +292,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
   var testSuite = { testsuite: [ { _attr: _attr } ] };
 
 
-  if(suite.file) {
+  if(suite.file && !antMode) {
     testSuite.testsuite[0]._attr.file =  suite.file;
   }
 
