@@ -76,6 +76,28 @@ var mocha = new Mocha({
 })
 ```
 
+You can also alternatively use the config `propertyFile` to use a javascript file instead which should return a object containing the properties.
+
+```javascript
+// testProperties.js
+module.exports = (suite) => {
+  return {
+    name: suite.name,
+    file: suite.file,
+    custom_property: custom_value
+  }
+}
+```
+
+```javascript
+var mocha = new Mocha({
+    reporter: 'mocha-junit-reporter',
+    reporterOptions: {
+        propertiesFile: 'testProperties.js'
+    }
+})
+```
+
 ### Results Report
 
 Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files. In addition to this these placeholders can also be used:

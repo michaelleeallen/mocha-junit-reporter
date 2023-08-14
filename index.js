@@ -64,6 +64,7 @@ function configureDefaults(options) {
   var config = findReporterOptions(options);
   debug('options', config);
   config.mochaFile = getSetting(config.mochaFile, 'MOCHA_FILE', 'test-results.xml');
+  config.propertiesFile = getSetting(config.propertiesFile, 'PROPERTIES_FILE', null);
   config.attachments = getSetting(config.attachments, 'ATTACHMENTS', false);
   config.antMode = getSetting(config.antMode, 'ANT_MODE', false);
   config.jenkinsMode = getSetting(config.jenkinsMode, 'JENKINS_MODE', false);
@@ -71,7 +72,7 @@ function configureDefaults(options) {
   config.toConsole = !!config.toConsole;
   config.rootSuiteTitle = config.rootSuiteTitle || 'Root Suite';
   config.testsuitesTitle = config.testsuitesTitle || 'Mocha Tests';
-
+    
   if (config.antMode) {
     updateOptionsForAntMode(config);
   }
@@ -168,8 +169,19 @@ function parsePropertiesFromEnv(envValue) {
   return null;
 }
 
-function generateProperties(options) {
-  var props = options.properties;
+function generateProperties(options, suite, propertiesFileRunner) {
+  var props;
+
+  if(propertiesFileRunner) {
+    const fileProps = propertiesFileRunner(suite);
+    if(Object.keys(fileProps).length) {
+      props = [];
+      Object.keys(fileProps).forEach(key => props[key] = fileProps[key]);
+    }
+  }
+  if(options.properties) {
+    props = options.properties;
+  }
   if (!props) {
     return [];
   }
@@ -296,7 +308,18 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
     testSuite.testsuite[0]._attr.file =  suite.file;
   }
 
-  var properties = generateProperties(this._options);
+  if (this._options.propertiesFile) {
+    try {
+      this.propertiesFileRunner = require(this._options.propertiesFile);
+    } catch (error) {
+      if(error.code === 'MODULE_NOT_FOUND') {
+        debug('Couldnt find the file: ' + error);
+      }
+      debug(error);
+    }
+  }
+
+  var properties = generateProperties(this._options, suite, this.propertiesFileRunner);
   if (properties.length || antMode) {
     testSuite.testsuite.push({
       properties: properties
@@ -450,7 +473,7 @@ MochaJUnitReporter.prototype.getXml = function(testsuites) {
   var totalTests = 0;
   var stats = this._runner.stats;
   var antMode = this._options.antMode;
-  var hasProperties = (!!this._options.properties) || antMode;
+  var hasProperties = (!!this._options.properties) || (!!this._options.propertiesFile) || antMode;
   var Date = this._Date;
 
   testsuites.forEach(function(suite) {
