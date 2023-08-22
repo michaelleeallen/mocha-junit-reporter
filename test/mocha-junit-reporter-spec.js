@@ -621,6 +621,64 @@ describe('mocha-junit-reporter', function() {
     });
   });
 
+  describe('when "propertiesFile" option is specified',function(){
+    it('use properties from the file', function(done){
+      var reporter = createReporter({propertiesFile: __dirname + '/mock-test-properties.js',mochaFile: 'test/output/mocha.xml'});
+      runTests(reporter, function() {
+        verifyMochaFile(reporter.runner, filePath, {
+          properties: [
+            {
+              name: 'CUSTOM_PROPERTY_FROM_FILE',
+              value: 'XYZ~321'
+            }
+          ]
+        });
+        done();
+      });
+    });
+
+    it('wrong file name should be ignored', function(done){
+      var reporter = createReporter({propertiesFile: 'wrong-file-directory',mochaFile: 'test/output/mocha.xml'});
+      runTests(reporter, function() {
+        verifyMochaFile(reporter.runner, filePath);
+        done();
+      });
+    });
+
+    it('wrong file name should not effect config.properties', function(done){
+      process.env.PROPERTIES = 'CUSTOM_PROPERTY:ABC~123';
+      var reporter = createReporter({propertiesFile: 'wrong-file-directory',mochaFile: 'test/output/mocha.xml'});
+      runTests(reporter, function() {
+        verifyMochaFile(reporter.runner, filePath, {
+          properties: [
+            {
+              name: 'CUSTOM_PROPERTY',
+              value: 'ABC~123'
+            }
+          ]
+        });
+        done();
+      });
+    });
+
+    it('config.properties to override config.propertiesFile', function(done){
+      process.env.PROPERTIES = 'CUSTOM_PROPERTY:ABC~123';
+      var reporter = createReporter({propertiesFile: __dirname + '/mock-test-properties.js' ,mochaFile: 'test/output/mocha.xml'});
+      runTests(reporter, function() {
+        verifyMochaFile(reporter.runner, filePath, {
+          properties: [
+            {
+              name: 'CUSTOM_PROPERTY',
+              value: 'ABC~123'
+            }
+          ]
+        });
+        done();
+      });
+    });
+
+  });
+
   describe('Output', function() {
     it('skips suites with empty title', function(done) {
       var reporter = createReporter();
