@@ -2,8 +2,10 @@
 
 var xml = require('xml');
 var Base = require('mocha').reporters.Base;
+var Spec = require('mocha').reporters.Spec;
 var fs = require('fs');
 var path = require('path');
+var inherits = require('util').inherits;
 var debug = require('debug')('mocha-junit-reporter');
 var mkdirp = require('mkdirp');
 var md5 = require('md5');
@@ -217,8 +219,13 @@ function MochaJUnitReporter(runner, options) {
     return testsuites[testsuites.length - 1].testsuite;
   }
 
-  // get functionality from the Base reporter
-  Base.call(this, runner);
+  if (this._options.spec) {
+    // get functionality from the Spec reporter
+    Spec.call(this, runner);
+  } else {
+    // get functionality from the Base reporter
+    Base.call(this, runner);
+  }
 
   // remove old results
   this._runner.on('start', function() {
@@ -275,6 +282,8 @@ function MochaJUnitReporter(runner, options) {
     this.flush(testsuites);
   }.bind(this));
 }
+
+inherits(MochaJUnitReporter, Base);
 
 /**
  * Produces an xml node for a test suite
