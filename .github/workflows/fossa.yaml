@@ -1,0 +1,16 @@
+---
+name: Fossa
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  fossa:
+    uses: Updater/.github/.github/workflows/fossa.yaml@main
+    secrets:
+      fossa-api-key: ${{ secrets.FOSSA_API_KEY }}
+      token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      repository: ${{ github.repository }}
+      ref: ${{ github.ref }}
