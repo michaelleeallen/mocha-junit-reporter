@@ -854,5 +854,68 @@ describe('mocha-junit-reporter', function() {
         });
       });
     });
+
+    describe('custom testCaseMetadata information', function () {
+      var reporter;
+      var rootSuite;
+      var suite1;
+
+      beforeEach(function() {
+        reporter = createReporter({jenkinsMode: true, attachments: true});
+        rootSuite = reporter.runner.suite;
+        suite1 = Suite.create(rootSuite, 'suite1');
+      });
+
+      it('maps a string value based atribute from the testCaseMetadata info to a custom property', function(done) {
+        var test = createTest('mytest',  function() {
+          this.testCaseMetadata = { test_key: 'CALC-1'};
+        });
+        suite1.addTest(test);
+
+        runRunner(reporter.runner, function() {
+          expect(reporter._xml).to.include('<properties>');
+          expect(reporter._testsuites[1].testsuite[1].testcase[1].properties).to.have.lengthOf(1);
+          expect(reporter._xml).to.include('<property name="test_key" value="CALC-1"/>');
+          done();
+        });
+      });
+
+      it('maps a content value based atribute from the testCaseMetadata info to a custom property', function(done) {
+        var test = createTest('mytest',  function() {
+          this.testCaseMetadata = { test_description: { _cdata:'a sample test' } };
+        });
+        suite1.addTest(test);
+
+        runRunner(reporter.runner, function() {
+          expect(reporter._xml).to.include('<properties>');
+          expect(reporter._testsuites[1].testsuite[1].testcase[1].properties).to.have.lengthOf(1);
+          expect(reporter._xml).to.include('<property name="test_description"><![CDATA[a sample test]]></property>');
+          done();
+        });
+      });
+
+      it('maps array based atribute from the testCaseMetadata info to a custom property, with inner elements', function(done) {
+        var test = createTest('mytest',  function() {
+          this.testCaseMetadata = {
+            testrun_evidence: [
+              { item: { name: "dummy-evidence1.txt", _cdata: 'aGVsbG8=' }},
+              { item: { name: "dummy-evidence2.txt", _cdata: 'd29ybGQ=' }}
+            ]
+          };
+        });
+        suite1.addTest(test);
+
+        runRunner(reporter.runner, function() {
+          expect(reporter._xml).to.include('<properties>');
+          expect(reporter._testsuites[1].testsuite[1].testcase[1].properties).to.have.lengthOf(1);
+          expect(reporter._xml).to.include('<property name="testrun_evidence">');
+          expect(reporter._xml).to.include('<item name="dummy-evidence1.txt"><![CDATA[aGVsbG8=]]></item>');
+          expect(reporter._xml).to.include('<item name="dummy-evidence2.txt"><![CDATA[d29ybGQ=]]></item>');
+          done();
+        });
+      });
+
+    });
+
   });
 });
