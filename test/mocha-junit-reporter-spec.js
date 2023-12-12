@@ -19,6 +19,7 @@ var FakeTimer = require('@sinonjs/fake-timers');
 var xmllint = require('xmllint');
 var chaiXML = require('chai-xml');
 var mockXml = require('./mock-results');
+var mockJunitSuites = require('./mock-junit-suites');
 var testConsole = require('test-console');
 
 var debug = require('debug')('mocha-junit-reporter:tests');
@@ -232,6 +233,12 @@ describe('mocha-junit-reporter', function() {
     });
   });
 
+  it('can handle getXml being called twice', function() {
+    var reporter = createReporter({mochaFile: 'test/output/mocha.xml'});
+    var testsuites = mockJunitSuites.withStringTimes();
+    reporter.getXml(testsuites);
+  });
+
   it('respects `process.env.MOCHA_FILE`', function(done) {
     process.env.MOCHA_FILE = 'test/output/results.xml';
     var reporter = createReporter();
@@ -271,6 +278,68 @@ describe('mocha-junit-reporter', function() {
     var reporter = createReporter({mochaFile: path});
     runTests(reporter, function() {
       verifyMochaFile(reporter.runner, dir + getFileNameWithHash(dir));
+      done();
+    });
+  });
+
+
+  it("respects `[testsuitesTitle]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[testsuitesTitle].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir + "results." + reporter._options.testsuitesTitle + ".xml"
+      );
+      done();
+    });
+  });
+
+  it("respects `[rootSuiteTitle]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[rootSuiteTitle].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir +
+          "results." +
+          reporter._testsuites[0].testsuite[0]._attr.name +
+          ".xml"
+      );
+      done();
+    });
+  });
+
+  it("respects `[suiteFilename]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[suiteFilename].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir +
+          "results." +
+          (reporter._testsuites[0]?.testsuite[0]?._attr?.file ?? 'suiteFilename') +
+          ".xml"
+      );
+      done();
+    });
+  });
+
+  it("respects `[suiteName]` pattern in test results report filename", function (done) {
+    var dir = "test/output/";
+    var path = dir + "results.[suiteName].xml";
+    var reporter = createReporter({ mochaFile: path });
+    runTests(reporter, function () {
+      verifyMochaFile(
+        reporter.runner,
+        dir +
+          "results." +
+          (reporter._testsuites[1]?.testsuite[0]?._attr?.name ?? 'suiteName') +
+          ".xml"
+      );
       done();
     });
   });
@@ -757,6 +826,29 @@ describe('mocha-junit-reporter', function() {
           expect(reporter._testsuites[2].testsuite[0]._attr.name).to.equal('Root Suite.Inner Suite.Another Suite');
           expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('fail test');
           expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.classname).to.equal('Inner Suite.Another Suite');
+
+          done();
+        });
+      });
+      it('prefix is added to a classname when jenkinsClassnamePrefix is specified', function(done) {
+        var reporter = createReporter({jenkinsMode: true,  jenkinsClassnamePrefix: "Added Prefix"});
+        var rootSuite = reporter.runner.suite;
+
+        var suite1 = Suite.create(rootSuite, 'Inner Suite');
+        suite1.addTest(createTest('test'));
+
+        var suite2 = Suite.create(suite1, 'Another Suite');
+        suite2.addTest(createTest('fail test', function(done) {
+          done(new Error('failed test'));
+        }));
+
+        runRunner(reporter.runner, function() {
+          expect(reporter._testsuites[0].testsuite[0]._attr.name).to.equal('');
+          expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.name).to.equal('test');
+          expect(reporter._testsuites[1].testsuite[1].testcase[0]._attr.classname).to.equal('Added Prefix.Inner Suite');
+          expect(reporter._testsuites[2].testsuite[0]._attr.name).to.equal('Root Suite.Inner Suite.Another Suite');
+          expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.name).to.equal('fail test');
+          expect(reporter._testsuites[2].testsuite[1].testcase[0]._attr.classname).to.equal('Added Prefix.Inner Suite.Another Suite');
 
           done();
         });

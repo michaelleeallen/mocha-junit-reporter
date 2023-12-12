@@ -166,7 +166,15 @@ Cypress:
 
 ### Results Report
 
-Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files.
+Results XML filename can contain `[hash]`, e.g. `./path_to_your/test-results.[hash].xml`. `[hash]` is replaced by MD5 hash of test results XML. This enables support of parallel execution of multiple `mocha-junit-reporter`'s writing test results in separate files. In addition to this these placeholders can also be used:
+
+| placeholder         | output                                            |
+| ------------------- | ------------------------------------------------- |
+| `[testsuitesTitle]` | will be replaced by the `testsuitesTitle` setting |
+| `[rootSuiteTitle]`  | will be replaced by the `rootSuiteTitle` setting  |
+| `[suiteFilename]`   | will be replaced by the filename of the spec file |
+| `[suiteName]`       | will be replaced by the name the first test suite |
+
 
 In order to display full suite title (including parents) just specify `testsuitesTitle` option
 ```javascript
@@ -283,6 +291,7 @@ output line 2
 | antMode                        | `false`                | set to truthy value to return xml compatible with [Ant JUnit schema][ant-schema]                                        |
 | antHostname                    | `process.env.HOSTNAME` | hostname to use when running in `antMode`  will default to environment `HOSTNAME`                                       |
 | jenkinsMode                    | `false`                | if set to truthy value will return xml that will display nice results in Jenkins                                        |
+| jenkinsClassnamePrefix         | `undefined`            | adds a prefix to a classname when running  in `jenkinsMode`                                                             |
 
 [travis-badge]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter.svg?branch=master
 [travis-build]: https://travis-ci.org/michaelleeallen/mocha-junit-reporter

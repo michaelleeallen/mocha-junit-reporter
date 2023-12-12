@@ -1,6 +1,6 @@
 {
   "name": "mocha-junit-reporter",
-  "version": "2.0.2",
+  "version": "2.2.1",
   "description": "A JUnit reporter for mocha.",
   "main": "index.js",
   "scripts": {
@@ -42,11 +42,11 @@
     "xmllint": "^0.1.1"
   },
   "dependencies": {
-    "debug": "^2.2.0",
-    "md5": "^2.1.0",
-    "mkdirp": "~0.5.1",
+    "debug": "^4.3.4",
+    "md5": "^2.3.0",
+    "mkdirp": "^3.0.0",
     "strip-ansi": "^6.0.1",
-    "xml": "^1.0.0"
+    "xml": "^1.0.1"
   },
   "peerDependencies": {
     "mocha": ">=2.2.5"

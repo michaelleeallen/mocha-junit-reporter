@@ -8,23 +8,8 @@ jobs:
 
     strategy:
       matrix:
-        include:
-          - mocha-version: 2
-            node-version: 10.x
-          - mocha-version: 3
-            node-version: 10.x
-          - mocha-version: 4
-            node-version: 10.x
-          - mocha-version: 5
-            node-version: 10.x
-          - mocha-version: 6
-            node-version: 10.x
-          - mocha-version: 7
-            node-version: 12.x
-          - mocha-version: 8
-            node-version: 14.x
-          - mocha-version: 9
-            node-version: 14.x
+        mocha-version: [6, 7, 8, 9]
+        node-version: [16.x, 18.x, 20.x]
 
     steps:
     - uses: actions/checkout@v1
