@@ -22,7 +22,7 @@ try {
     fs.readFileSync(path.dirname(require.resolve('mocha')) + "/package.json", "utf8")
   );
   var version = json.version;
-  if (semver.gte(version, "6")) {
+  if (semver.gte(version, "6.0.0")) {
     createStatsCollector = require("mocha/lib/stats-collector");
     mocha6plus = true;
   } else {
