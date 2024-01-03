@@ -8,6 +8,7 @@ var debug = require('debug')('mocha-junit-reporter');
 var mkdirp = require('mkdirp');
 var md5 = require('md5');
 var stripAnsi = require('strip-ansi');
+var semver = require('semver');
 
 // Save timer references so that times are correct even if Date is stubbed.
 // See https://github.com/mochajs/mocha/issues/237
@@ -21,7 +22,7 @@ try {
     fs.readFileSync(path.dirname(require.resolve('mocha')) + "/package.json", "utf8")
   );
   var version = json.version;
-  if (version >= "6") {
+  if (semver.gte(version, "6")) {
     createStatsCollector = require("mocha/lib/stats-collector");
     mocha6plus = true;
   } else {
