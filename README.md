@@ -1,3 +1,5 @@
+THIS A FORK OF https://github.com/michaelleeallen/mocha-junit-reporter with support of --parallel flag
+
 # JUnit Reporter for Mocha
 
 [![Build Status][travis-badge]][travis-build]
