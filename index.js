@@ -130,7 +130,7 @@ function getSetting(value, key, defaultVal, transform) {
 
 function defaultSuiteTitle(suite) {
   if (suite.root && suite.title === '') {
-      return stripAnsi(this._options.rootSuiteTitle);
+      return stripAnsi(suite.suites[0].title);
   }
   return stripAnsi(suite.title);
 }
@@ -152,7 +152,7 @@ function fullSuiteTitle(suite) {
 }
 
 function isInvalidSuite(suite) {
-  return (!suite.root && suite.title === '') || (suite.tests.length === 0 && suite.suites.length === 0);
+  return (!suite.root) || (suite.tests.length === 0 && suite.suites.length === 0);
 }
 
 function parsePropertiesFromEnv(envValue) {
@@ -287,7 +287,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
   var _attr =  {
     name: this._generateSuiteTitle(suite),
     timestamp: this._Date.now(),
-    tests: suite.tests.length
+    tests: suite.suites[0].tests.length
   };
   var testSuite = { testsuite: [ { _attr: _attr } ] };
 
@@ -323,7 +323,7 @@ MochaJUnitReporter.prototype.getTestsuiteData = function(suite) {
 MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   var jenkinsMode = this._options.jenkinsMode;
   var flipClassAndName = this._options.testCaseSwitchClassnameAndName;
-  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test, this._options) : test.fullTitle());
+  var name = stripAnsi(jenkinsMode ? getJenkinsClassname(test, this._options) : test.title);
   var classname = stripAnsi(test.title);
   var testcase = {
     testcase: [{
