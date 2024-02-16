@@ -1,12 +1,11 @@
-name: Node CI
+name: Node  CI
 
 on:
-  push:
-    branches: 
-      - master
   workflow_dispatch:
-    branches:
-      - master
+    inputs:
+      name:
+        description: "Who to greet"
+        default: "World"
 
 jobs:
   build:
